@@ -1,0 +1,7 @@
+{
+  "tabWidth": 2,
+  "useTabs": false,
+  "printWidth": 80,
+  "tailwindConfig": "./tailwind.config.cjs",
+  "pugAttributeSeparator": "none"
+}
