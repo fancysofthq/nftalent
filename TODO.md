@@ -1,8 +1,15 @@
 - [ ] Live sync events
-- [ ] Hide overflow text in token preview
-- [ ] Purchase
-  - [ ] Action
-  - [ ] Feed entry
-- [ ] Redeem
-  - [ ] Action
-  - [ ] Feed entry
+- [ ] Hide overflow in Markdown text
+- [ ] Markdown text styling
+- [x] Purchase
+  - [x] Action
+  - [x] Feed entry
+- [x] Redeem
+  - [x] Action
+  - [x] Feed entry
+- [ ] Reload profile page when clicking another account
+- [ ] Rework feed entry
+- [ ] Time ago
+  - [ ] Minted
+  - [ ] Expires
+  - [ ] Feed

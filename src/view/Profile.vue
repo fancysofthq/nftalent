@@ -22,7 +22,7 @@ type RichListing = {
 const listings: ShallowRef<RichListing[]> = ref([]);
 
 onConnect(async () => {
-  const events = await ethEventDb.accountListings(eth.account.value!);
+  const events = await ethEventDb.accountListings(props.account);
 
   listings.value = events.map((e) => ({
     event: e,
@@ -48,8 +48,12 @@ onConnect(async () => {
       h2.text-lg {{ account }}
     h2.font-bold.text-lg ✨ Listings
     .flex.flex-col.border.divide-y
-      //- div(v-for="listing in listings") {{ listing.token.aux }}
-      TokenListing(v-for="listing in listings" :token="listing.token")
+      TokenListing(
+        v-if="listings.length > 0"
+        v-for="listing in listings"
+        :token="listing.token"
+      )
+      .p-4.text-base-content.text-center(v-else) No listings yet
     h2.font-bold.text-lg 📰 Feed
     .flex.flex-col.border.divide-y
       Feed(:accountFilter="account")

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { ref, ShallowRef } from "vue";
+import { computed, ref, ShallowRef } from "vue";
 import Account from "./eth/Account";
 import NFTSimpleListing from "./eth/contract/NFTSimpleListing";
 import NFTime from "./eth/contract/NFTime";

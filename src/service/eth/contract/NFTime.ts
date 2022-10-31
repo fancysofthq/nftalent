@@ -54,9 +54,17 @@ export type TransferEvent = {
 
   from: string;
   to: string;
-  id: string; // NOTE: [^1]
+  token: {
+    id: string; // NOTE: [^1]
+  };
   value: BigInt;
 };
+
+export type BurnEvent = TransferEvent;
+
+export function isBurnEvent(event: any): event is BurnEvent {
+  return "to" in event && event.to == AddressZero;
+}
 
 export default class NFTime {
   readonly contract: BaseType;
@@ -79,7 +87,9 @@ export default class NFTime {
         subIndex: 0,
         from: e.args!.from.toLowerCase(),
         to: e.args!.to.toLowerCase(),
-        id: e.args!.id._hex,
+        token: {
+          id: e.args!.id._hex,
+        },
         value: BigInt(e.args!.value._hex),
       }),
       untilBlock
@@ -145,5 +155,9 @@ export default class NFTime {
       [AddressZero, cid2Id(cid)._hex],
       "nextunique"
     );
+  }
+
+  async redeem(cid: CID, amount: BigNumber): Promise<ContractTransaction> {
+    return await this.contract.redeem(cid2Id(cid), amount);
   }
 }

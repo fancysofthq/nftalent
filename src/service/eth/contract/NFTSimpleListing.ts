@@ -1,6 +1,12 @@
 import { NftSimpleListing as BaseType } from "./abi/types/NftSimpleListing";
 import { abi } from "./abi/NFTSimpleListing.json";
-import { BigNumber, BytesLike, ethers, Signer } from "ethers";
+import {
+  BigNumber,
+  BytesLike,
+  ContractTransaction,
+  ethers,
+  Signer,
+} from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { CID } from "multiformats";
 import Account from "../Account";
@@ -28,6 +34,7 @@ export class ListingConfig {
 }
 
 export class Listing {
+  id: BigNumber;
   seller: Account;
   token: ERC1155Token;
   stockSize: BigNumber;
@@ -35,12 +42,14 @@ export class Listing {
   block?: number;
 
   constructor(
+    id: BigNumber,
     seller: Account,
     token: ERC1155Token,
     stockSize: BigNumber,
     config: ListingConfig,
     block?: number
   ) {
+    this.id = id;
     this.seller = seller;
     this.token = token;
     this.stockSize = stockSize;
@@ -75,6 +84,50 @@ export type ListEvent = {
   // app: string; // NOTE: It won't contain other app's listings anyway
   appPremium: number;
 };
+
+export function isListEvent(event: any): event is ListEvent {
+  return "seller" in event;
+}
+
+/**
+ * Solidity mapping:
+ *
+ * ```solidity
+ * event Purchase(
+ *     address indexed buyer,
+ *     uint256 indexed listingId,
+ *     uint256 income,
+ *     address royaltyAddress,
+ *     uint256 royaltyValue,
+ *     address indexed appAddress,
+ *     uint256 appPremium,
+ *     uint256 profit
+ * );
+ * ```
+ */
+export type PurchaseEvent = {
+  transactionHash: string;
+  blockNumber: number;
+  logIndex: number;
+
+  buyer: string;
+  listingId: string; // NOTE: [^1]
+  token: {
+    // contract: string; // NOTE: The contract address is well-known
+    id: string;
+  };
+  amount: BigInt;
+  income: BigInt;
+  royaltyAddress: string;
+  royaltyValue: BigInt;
+  // appAddress: string; // NOTE: It won't contain other app's listings anyway
+  appPremium: BigInt;
+  profit: BigInt;
+};
+
+export function isPurchaseEvent(event: any): event is PurchaseEvent {
+  return "buyer" in event;
+}
 
 export default class NFTSimpleListing {
   readonly contract: BaseType;
@@ -122,6 +175,7 @@ export default class NFTSimpleListing {
         null,
         null,
         null,
+        null,
         import.meta.env.VITE_ADDR_APP.toLowerCase(),
         null,
         null
@@ -132,7 +186,12 @@ export default class NFTSimpleListing {
         logIndex: e.logIndex,
 
         buyer: e.args!.buyer.toLowerCase(),
-        listingId: e.args!.listingId.toLowerCase(),
+        listingId: e.args!.listingId._hex,
+        token: {
+          contract: e.args!.token.contract_,
+          id: e.args!.token.id._hex,
+        },
+        amount: BigInt(e.args!.amount._hex),
         income: BigInt(e.args!.income._hex),
         royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
         royaltyValue: BigInt(e.args!.royaltyValue._hex),
@@ -151,6 +210,7 @@ export default class NFTSimpleListing {
     }
 
     return new Listing(
+      listingId,
       new Account(listing.seller),
       new ERC1155Token(new Account(listing.token.contract_), listing.token.id),
       listing.stockSize,
@@ -171,7 +231,7 @@ export default class NFTSimpleListing {
   }
 
   async findPrimaryListing(token: ERC1155Token): Promise<Listing | null> {
-    const listingId = await this.contract.firstTokenListingId(
+    const listingId = await this.contract.primaryListingId(
       token.contract.toString(),
       token.id
     );
@@ -181,5 +241,20 @@ export default class NFTSimpleListing {
     }
 
     return await this.getListing(listingId);
+  }
+
+  /**
+   * Purchase tokens from a listing.
+   * @param listingId
+   * @param amount of tokens to purchase
+   * @param value in wei
+   * @returns Receipt
+   */
+  async purchase(
+    listingId: BigNumber,
+    amount: BigNumber,
+    value: BigNumber
+  ): Promise<ContractTransaction> {
+    return await this.contract.purchase(listingId, amount, { value });
   }
 }

@@ -1,4 +1,3 @@
-import { Deferred } from "@/util";
 import { AddressZero } from "@ethersproject/constants";
 import { Contract, Event, EventFilter } from "ethers";
 import {
@@ -9,12 +8,10 @@ import {
   IndexNames,
   IndexKey,
 } from "idb";
-import { list } from "postcss";
-import { provider } from "../eth";
 import Account from "./Account";
 import ERC1155Token from "./contract/ERC1155Token";
-import { TransferEvent } from "./contract/NFTime";
-import { ListEvent } from "./contract/NFTSimpleListing";
+import { BurnEvent, TransferEvent } from "./contract/NFTime";
+import { ListEvent, PurchaseEvent } from "./contract/NFTSimpleListing";
 
 interface EventDB extends DBSchema {
   latestFetchedEventBlock: {
@@ -31,6 +28,7 @@ interface EventDB extends DBSchema {
       id: string;
       fromId: [string, string];
       toId: [string, string];
+      fromTo: [string, string];
     };
   };
 
@@ -40,39 +38,10 @@ interface EventDB extends DBSchema {
     indexes: { listingId: string; tokenId: string; seller: string };
   };
 
-  /**
-   * Solidity mapping:
-   *
-   * ```solidity
-   * event Purchase(
-   *     address indexed buyer,
-   *     uint256 indexed listingId,
-   *     uint256 income,
-   *     address royaltyAddress,
-   *     uint256 royaltyValue,
-   *     address indexed appAddress,
-   *     uint256 appPremium,
-   *     uint256 profit
-   * );
-   * ```
-   */
   "NFTSimpleListing.Purchase": {
     key: [number, number]; // blockNumber + logIndex
-    value: {
-      transactionHash: string;
-      blockNumber: number;
-      logIndex: number;
-
-      buyer: string;
-      listingId: string; // NOTE: [^1]
-      income: BigInt;
-      royaltyAddress: string;
-      royaltyValue: BigInt;
-      // appAddress: string; // NOTE: It won't contain other app's listings anyway
-      appPremium: BigInt;
-      profit: BigInt;
-    };
-    indexes: { buyer: string; listingId: string };
+    value: PurchaseEvent;
+    indexes: { buyer: string; tokenId: string; listingId: string };
   };
 }
 // [1]: It should have been `BigInt` instead,
@@ -86,9 +55,10 @@ const db = await openDB<EventDB>("eth_event_db", 1, {
 
     e1.createIndex("from", "from");
     e1.createIndex("to", "to");
-    e1.createIndex("id", "id");
-    e1.createIndex("fromId", ["from", "id"]);
-    e1.createIndex("toId", ["to", "id"]);
+    e1.createIndex("id", "token.id");
+    e1.createIndex("fromId", ["from", "token.id"]);
+    e1.createIndex("toId", ["to", "token.id"]);
+    e1.createIndex("fromTo", ["from", "to"]);
 
     const e2 = db.createObjectStore("NFTSimpleListing.List", {
       keyPath: ["blockNumber", "logIndex"],
@@ -103,6 +73,7 @@ const db = await openDB<EventDB>("eth_event_db", 1, {
     });
 
     e3.createIndex("buyer", "buyer");
+    e3.createIndex("tokenId", "token.id");
     e3.createIndex("listingId", "listingId");
 
     const latestFetchedEventBlock = db.createObjectStore(
@@ -230,27 +201,43 @@ export async function findEvent<
 
 export default db;
 
-export async function tokenHistory(token: ERC1155Token): Promise<ListEvent[]> {
+export async function tokenHistory(
+  token: ERC1155Token
+): Promise<(ListEvent | PurchaseEvent | BurnEvent)[]> {
   // * [x] Listed
-  // * [ ] Purchased
-  // * [ ] Redeemed
+  // * [x] Purchased
+  // * [x] Redeemed
 
-  let listEventPromise = new Deferred<ListEvent | undefined>();
-  findEvent(
-    "NFTSimpleListing.List",
-    "tokenId",
-    token.id._hex,
-    "nextunique"
-  ).then((e) => listEventPromise.resolve(e));
+  const events: (ListEvent | PurchaseEvent | BurnEvent)[] = [];
 
-  const events: ListEvent[] = [];
+  await Promise.all([
+    iterateEventIndex(
+      "NFTime.Transfer",
+      "toId",
+      [AddressZero, token.id._hex],
+      "prev",
+      (e) => events.push(e)
+    ),
 
-  let listEvent;
-  if ((listEvent = await listEventPromise.promise)) {
-    events.push(listEvent);
-  }
+    findEvent(
+      "NFTSimpleListing.List",
+      "tokenId",
+      token.id._hex,
+      "nextunique"
+    ).then((e) => {
+      if (e) events.push(e);
+    }),
 
-  return events;
+    iterateEventIndex(
+      "NFTSimpleListing.Purchase",
+      "tokenId",
+      token.id._hex,
+      "prev",
+      (e) => events.push(e)
+    ),
+  ]);
+
+  return events.sort((a, b) => b.blockNumber - a.blockNumber);
 }
 
 export async function accountListings(account: Account): Promise<ListEvent[]> {
@@ -271,36 +258,59 @@ export async function accountListings(account: Account): Promise<ListEvent[]> {
 
 export async function feed() {
   // * [x] Listed
-  // * [ ] Purchased
-  // * [ ] Redeemed
+  // * [x] Purchased
+  // * [x] Redeemed
   // * [ ] Consumed
 
-  let listEvents: ListEvent[] = [];
+  let events: (ListEvent | PurchaseEvent | BurnEvent)[] = [];
 
-  await iterateEvents("NFTSimpleListing.List", "prev", (e) => {
-    listEvents.push(e);
-  });
+  await Promise.all([
+    iterateEvents("NFTSimpleListing.List", "prev", (e) => events.push(e)),
+    iterateEvents("NFTSimpleListing.Purchase", "prev", (e) => events.push(e)),
+    iterateEventIndex("NFTime.Transfer", "to", AddressZero, "prev", (e) =>
+      events.push(e)
+    ),
+  ]);
 
-  return listEvents;
+  return events.sort((a, b) => b.blockNumber - a.blockNumber);
 }
 
 export async function accountFeed(account: Account) {
   // * [x] Listed
-  // * [ ] Purchased
-  // * [ ] Redeemed
+  // * [x] Purchased
+  // * [x] Redeemed (burning)
   // * [ ] Consumed
 
-  let listEvents: ListEvent[] = [];
+  let events: (ListEvent | PurchaseEvent | BurnEvent)[] = [];
 
-  await iterateEventIndex(
-    "NFTSimpleListing.List",
-    "seller",
-    account.toString(),
-    "prev",
-    (e) => {
-      listEvents.push(e);
-    }
-  );
+  await Promise.all([
+    // BurnEvent
+    iterateEventIndex(
+      "NFTime.Transfer",
+      "fromTo",
+      [account.toString(), AddressZero],
+      "prev",
+      (e) => events.push(e)
+    ),
 
-  return listEvents;
+    // ListEvent
+    iterateEventIndex(
+      "NFTSimpleListing.List",
+      "seller",
+      account.toString(),
+      "prev",
+      (e) => events.push(e)
+    ),
+
+    // PurchaseEvent
+    iterateEventIndex(
+      "NFTSimpleListing.Purchase",
+      "buyer",
+      account.toString(),
+      "prev",
+      (e) => events.push(e)
+    ),
+  ]);
+
+  return events.sort((a, b) => b.blockNumber - a.blockNumber);
 }

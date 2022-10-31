@@ -99,9 +99,10 @@ const tokenPreview = computed(
       mintedAt: ref(new Date()),
       primaryListing: ref(
         new Listing(
+          BigNumber.from(0),
           Account.zero(),
           erc1155Token,
-          BigNumber.from(editions.value),
+          BigNumber.from(editions.value || 0),
           new ListingConfig(price.value, eth.app, new Uint8(10))
         )
       ),
@@ -218,7 +219,7 @@ function date2InputDate(date: Date) {
           span.daisy-label-text.font-semibold 
             span Description (Markdown)
             span.ml-1(v-if="!description") ⚠️
-        textarea.daisy-textarea.daisy-textarea-bordered.w-full.-mb-1(
+        textarea.daisy-textarea.daisy-textarea-bordered.w-full.-mb-1.leading-tight(
           type="text"
           placeholder="Description"
           rows="3"
@@ -312,12 +313,15 @@ function date2InputDate(date: Date) {
                   :kind="SpinnerKind.Puff"
                 )
 
-        button.daisy-btn.w-full.daisy-btn-accent(
+        button.daisy-btn.w-full.daisy-btn-primary(
           @click="mint"
           :disabled="!isMintable || mintInProgress"
         ) 
           span.text-lg ✨
           span Mint
+          .rounded-full.text-sm(
+            style="box-shadow: 0 0.5px 1px hsl(var(--bc) / var(--tw-text-opacity)); padding: 0.25rem 0.5rem; background-color: hsl(var(--pc) / var(--tw-text-opacity))"
+          ) 🦊⚡️
 </template>
 
 <style scoped lang="scss"></style>

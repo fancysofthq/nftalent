@@ -15,23 +15,22 @@ const { token, feedEntry = false } = defineProps<Props>();
 </script>
 
 <template lang="pug">
-.flex.flex-col.gap-1.w-full
-  .flex.justify-between.items-end
-    span.inline-flex.items-center.gap-1.text-lg.leading-none
-      router-link.font-bold.text-primary.daisy-link-hover(
+.flex.flex-col.w-full.gap-1
+  .flex.justify-between.items-baseline.leading-zero
+    span.inline-flex.items-baseline.gap-1
+      router-link.font-bold.text-primary.daisy-link-hover.contents(
         :to="'/' + id2Cid(token.token.id)"
       ) 
-        span(v-if="token.aux.metadata.value") {{ token.aux.metadata.value.name }}
+        span.text-lg.leading-zero(v-if="token.aux.metadata.value") {{ token.aux.metadata.value.name }}
         Placeholder.h-5.w-32(v-else)
-      span.inline-flex.items-center.gap-1
-        img.h-5(src="/img/eth-icon.svg")
-        template(v-if="token.aux.primaryListing.value")
-          span {{ ethers.utils.formatEther(token.aux.primaryListing.value.config.price) }}
-          span /hr
-        Placeholder.h-5.w-32(v-else)
+      img(src="/img/eth-icon.svg" style="height: 1.11rem; align-self: normal")
+      template(v-if="token.aux.primaryListing.value")
+        span {{ ethers.utils.formatEther(token.aux.primaryListing.value.config.price) }}
+        span.text-sm per 1 hour
+      Placeholder.h-5.w-32(v-else)
     span.text-base-content.text-opacity-75.text-sm(
       v-if="token.aux.expiredAt.value"
-    ) ⌛️ Expires {{ token.aux.expiredAt.value.toLocaleString() }}
+    ) ⌛️ Exp. {{ token.aux.expiredAt.value.toLocaleString() }}
     Placeholder.h-5.w-24(v-else)
 
   .flex.flex-wrap.gap-1(
