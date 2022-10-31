@@ -3,7 +3,12 @@ export type FileWithUrl = File & { url?: string };
 </script>
 
 <script setup lang="ts">
-const props = defineProps<{ file: FileWithUrl | undefined }>();
+interface Props {
+  file?: FileWithUrl;
+  disabled?: boolean;
+}
+
+const { file, disabled = undefined } = defineProps<Props>();
 const emit = defineEmits(["update:file"]);
 
 function updateFile(file: FileWithUrl | undefined) {
@@ -25,15 +30,21 @@ function onFileDrop(e: DragEvent) {
 </script>
 
 <template lang="pug">
-label.label.h-full.w-full.flex.flex-col.justify-center.items-center.cursor-pointer(
+label.label.h-full.w-full.flex.flex-col.justify-center.items-center(
   @dragover.prevent
   @drop.prevent="onFileDrop"
+  :class="{ 'cursor-pointer': !disabled, 'cursor-not-allowed': disabled }"
 )
   img.h-full.w-full.object-cover.rounded(v-if="file" :src="file.url")
   .flex.flex-col.items-center(v-else)
     span.text-2xl 🖼
     span.text-sm.font-medium Select image
-  input.input.hidden(type="file" @change="onFileChange" accept="image/*")
+  input.input.hidden(
+    type="file"
+    @change="onFileChange"
+    accept="image/*"
+    :disabled="disabled"
+  )
 </template>
 
 <style scoped lang="scss"></style>

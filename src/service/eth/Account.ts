@@ -31,6 +31,10 @@ export default class Account {
     return this.address.equals(other.address);
   }
 
+  isZero(): boolean {
+    return this.address.every((b) => b == 0);
+  }
+
   get trimmed(): string {
     return "0x" + this.toString().slice(2, 8).toUpperCase();
   }

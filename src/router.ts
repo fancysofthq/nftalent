@@ -7,6 +7,8 @@ import Token from "./view/Token.vue";
 import Account from "./service/eth/Account";
 import ERC1155Token from "./service/eth/contract/ERC1155Token";
 import { BigNumber } from "ethers";
+import { CID } from "multiformats";
+import { base32 } from "multiformats/bases/base32";
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -15,18 +17,15 @@ export default createRouter({
     { path: "/settings", component: Settings },
     { path: "/mint", component: Mint },
     {
-      path: "/token/:id",
+      path: "/:cid(bafy[0-7a-zA-Z]{55})",
       component: Token,
       meta: { name: "Token" },
       props: (route) => ({
-        token: new ERC1155Token(
-          new Account(import.meta.env.VITE_IPNFTREDEEMABLE_ADDRESS),
-          BigNumber.from(route.params.id)
-        ),
+        cid: CID.parse(route.params.cid as string, base32),
       }),
     },
     {
-      path: "/:address",
+      path: "/:address(0x[0-9a-fA-F]{40})",
       component: Profile,
       meta: { name: "Profile" },
       props: (route) => ({

@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { nftStorageApiKey, ipfsGateway } from "@/store";
+import {
+  nftStorageApiKeyKey,
+  nftStorageApiKey,
+  ipfsGatewayKey,
+  ipfsGateway,
+} from "@/store";
 
 // Save `nftStorageApiKey` to localStorage
 function saveNftStorageApiKey() {
   if (nftStorageApiKey.value) {
-    localStorage.setItem("nftStorageApiKey", nftStorageApiKey.value);
+    localStorage.setItem(nftStorageApiKeyKey, nftStorageApiKey.value);
     console.log("Saved nftStorageApiKey to localStorage");
   } else {
-    localStorage.removeItem("nftStorageApiKey");
+    localStorage.removeItem(nftStorageApiKeyKey);
     console.log("Removed nftStorageApiKey from localStorage");
   }
 }
@@ -15,10 +20,10 @@ function saveNftStorageApiKey() {
 // Save `ipfsGateway` to localStorage
 function saveIpfsGateway() {
   if (ipfsGateway.value) {
-    localStorage.setItem("ipfsGateway", ipfsGateway.value);
+    localStorage.setItem(ipfsGatewayKey, ipfsGateway.value);
     console.log("Saved ipfsGateway to localStorage");
   } else {
-    localStorage.removeItem("ipfsGateway");
+    localStorage.removeItem(ipfsGatewayKey);
     console.log("Removed ipfsGateway from localStorage");
   }
 }
@@ -45,7 +50,11 @@ function saveIpfsGateway() {
           span Save
 
       label.daisy-label
-        span.daisy-label-text IPFS gateway
+        span.daisy-label-text 
+          span IPFS&nbsp;
+          a.daisy-link(
+            href="https://docs.ipfs.tech/concepts/ipfs-gateway/#subdomain"
+          ) subdomain gateway
       .flex.gap-2
         input.daisy-input.daisy-input-bordered.w-full(
           type="text"

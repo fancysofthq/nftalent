@@ -1,39 +1,46 @@
 <script setup lang="ts">
-import { ERC1155TokenWrapper } from "@/service/db";
-import { notNull } from "@/util";
+import Placeholder from "./Placeholder.vue";
+import { id2Cid } from "@/service/eth/contract/NFTime";
+import * as ipfs from "@/service/ipfs";
 import TokenPreview from "./TokenPreview.vue";
+import { RichToken } from "./RichToken";
 
-const props = defineProps<{
-  token: ERC1155TokenWrapper;
-}>();
+const props = defineProps<{ token: RichToken }>();
 </script>
 
 <template lang="pug">
 .grid.p-4.gap-3(style="grid-template-columns: 10rem auto")
   router-link.font-bold.text-primary.daisy-link-hover(
-    :to="'/token/' + token.token.id._hex"
+    tabindex="-1"
+    :to="'/' + id2Cid(token.token.id)"
   )
     img.rounded-lg.aspect-square.object-cover.w-full(
-      :src="notNull(token.token.metadata).image"
+      v-if="token.aux.metadata.value"
+      :src="ipfs.processUri(token.aux.metadata.value.image).toString()"
     )
-  TokenPreview(:token="token" :small="false")
+    Placeholder.w-full.aspect-square(v-else)
+  TokenPreview(:token="token" :feed-entry="false")
     .flex.justify-between.mt-1.p-2.border
       .flex.gap-2.items-center
-        button.daisy-btn.daisy-btn-primary.daisy-btn-sm
+        button.daisy-btn.daisy-btn-primary.daisy-btn-sm(
+          :disabled="!(token.aux.primaryListing.value && token.aux.primaryListing.value.stockSize.gt(0))"
+        ) 
           span.text-xl 💳
-          span Purchase!
-        span.text-base-content.text-opacity-75.text-sm
-          span.font-semibold 10
-          span.ml-1 in stock
+          span Purchase
+        .text-base-content.text-opacity-75.text-sm.flex.justify-center.gap-1
+          span.font-semibold.ml-1(v-if="token.aux.primaryListing.value") {{ token.aux.primaryListing.value.stockSize.toNumber() }}
+          Placeholder.inline-block.h-5.w-12(v-else)
+          span in stock
       .flex.gap-2.items-center
-        span.text-base-content.text-opacity-75.text-sm
+        .text-base-content.text-opacity-75.text-sm.flex.justify-center.gap-1
           span You have
-          span.font-semibold.ml-1 {{ token.balance }}
+          span.font-semibold(v-if="token.aux.balance.value") {{ token.aux.balance.value }}
+          Placeholder.inline-block.h-5.w-12(v-else)
         button.daisy-btn.daisy-btn-secondary.daisy-btn-sm(
-          :disabled="notNull(token.balance).eq(0)"
+          :disabled="!token.aux.balance.value?.gt(0)"
         ) 
           span.text-xl 🎟
-          span Redeem!
+          span Redeem
 </template>
 
 <style scoped lang="scss"></style>

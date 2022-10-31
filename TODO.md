@@ -1,0 +1,8 @@
+- [ ] Live sync events
+- [ ] Hide overflow text in token preview
+- [ ] Purchase
+  - [ ] Action
+  - [ ] Feed entry
+- [ ] Redeem
+  - [ ] Action
+  - [ ] Feed entry

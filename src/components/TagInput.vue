@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const props = defineProps<{ modelValue: string[]; placeholder?: string }>();
+interface Props {
+  modelValue: string[];
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+const { modelValue, placeholder, disabled } = defineProps<Props>();
 const emit = defineEmits(["update:modelValue"]);
 
 const newTag = ref("");
 
 function addTag(e: FocusEvent | KeyboardEvent) {
   if (!newTag.value) return;
-  props.modelValue.push(newTag.value);
-  emit("update:modelValue", props.modelValue);
+  modelValue.push(newTag.value);
+  emit("update:modelValue", modelValue);
   newTag.value = "";
 }
 
@@ -19,16 +25,16 @@ function onDelete(e: KeyboardEvent) {
   if (!newTag.value) {
     e.preventDefault();
 
-    if (props.modelValue.length) {
-      props.modelValue.pop();
-      emit("update:modelValue", props.modelValue);
+    if (modelValue.length) {
+      modelValue.pop();
+      emit("update:modelValue", modelValue);
     }
   }
 }
 
 function deleteTag(index: number) {
-  props.modelValue.splice(index, 1);
-  emit("update:modelValue", props.modelValue);
+  modelValue.splice(index, 1);
+  emit("update:modelValue", modelValue);
 }
 
 function onCustomKey(e: KeyboardEvent) {
@@ -57,5 +63,6 @@ function onCustomKey(e: KeyboardEvent) {
     @keyup.enter="addTag"
     @keydown="onCustomKey"
     :placeholder="modelValue.length ? '' : placeholder"
+    :disabled="disabled"
   )
 </template>

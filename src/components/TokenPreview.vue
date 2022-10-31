@@ -1,59 +1,73 @@
 <script setup lang="ts">
-import { ERC1155TokenWrapper } from "@/service/db";
-import { notNull } from "@/util";
+import Placeholder from "./Placeholder.vue";
+import { id2Cid } from "@/service/eth/contract/NFTime";
 import { ethers } from "ethers";
-import { ref } from "vue";
 import Markdown from "vue3-markdown-it";
 import Chip from "./Chip.vue";
-import PFP from "./PFP.vue";
+import { RichToken } from "./RichToken";
 
 interface Props {
-  token: ERC1155TokenWrapper;
-  small?: boolean;
+  token: RichToken;
+  feedEntry?: boolean;
 }
 
-const { token, small = false } = defineProps<Props>();
-const textHidden = ref(true);
+const { token, feedEntry = false } = defineProps<Props>();
 </script>
 
 <template lang="pug">
 .flex.flex-col.gap-1.w-full
   .flex.justify-between.items-end
-    span.inline-flex.items-center.gap-2.text-lg.leading-none
+    span.inline-flex.items-center.gap-1.text-lg.leading-none
       router-link.font-bold.text-primary.daisy-link-hover(
-        :to="'/token/' + token.token.id._hex"
-      ) {{ notNull(token.token.metadata).name }}
+        :to="'/' + id2Cid(token.token.id)"
+      ) 
+        span(v-if="token.aux.metadata.value") {{ token.aux.metadata.value.name }}
+        Placeholder.h-5.w-32(v-else)
       span.inline-flex.items-center.gap-1
         img.h-5(src="/img/eth-icon.svg")
-        span {{ ethers.utils.formatEther(notNull(token.price)) }}
-        span /hr
-    span.text-base-content.text-opacity-75.text-sm ⌛️ Expires {{ notNull(token.token.metadata).properties.expiresAt.toLocaleDateString() }}
+        template(v-if="token.aux.primaryListing.value")
+          span {{ ethers.utils.formatEther(token.aux.primaryListing.value.config.price) }}
+          span /hr
+        Placeholder.h-5.w-32(v-else)
+    span.text-base-content.text-opacity-75.text-sm(
+      v-if="token.aux.expiredAt.value"
+    ) ⌛️ Expires {{ token.aux.expiredAt.value.toLocaleString() }}
+    Placeholder.h-5.w-24(v-else)
 
   .flex.flex-wrap.gap-1(
-    v-if="notNull(token.token.metadata).properties.tags.length > 0"
+    v-if="token.aux.metadata.value && token.aux.metadata.value.properties.tags.length > 0"
   )
     span.daisy-badge.daisy-badge-outline.daisy-badge-secondary.daisy-badge-sm(
-      v-for="tag in notNull(token.token.metadata).properties.tags"
+      v-for="tag in token.aux.metadata.value.properties.tags"
     ) \#{{ tag }}
 
   // TODO: Hide overflowing text.
   Markdown.leading-tight.flex.flex-col.gap-1.text-justify(
-    :source="notNull(token.token.metadata).description"
-    :class="{ 'text-sm': small, 'text-base': !small }"
+    v-if="token.aux.metadata.value"
+    :source="token.aux.metadata.value.description"
+    :class="{ 'text-sm': feedEntry, 'text-base': !feedEntry }"
   )
+  .flex.flex-col.gap-2(v-else)
+    Placeholder.h-4.w-full
+    Placeholder.h-4.w-full
 
   .flex.leading-none.gap-1.items-center.text-xs.text-base-content.text-opacity-75
     span &copy;
     Chip.h-5.bg-base-200.text-opacity-100(
-      :account="notNull(token.minter)"
+      v-if="token.aux.minter.value"
+      :account="token.aux.minter.value"
       pfp-class="bg-base-100"
     )
+    Placeholder.inline-block.h-5.w-full(v-else)
     span ⋅
-    span minted 1 day ago
+    span(v-if="token.aux.mintedAt.value") minted {{ token.aux.mintedAt.value.toLocaleDateString() }}
+    Placeholder.inline-block.h-5.w-full(v-else)
     span ⋅
-    span {{ token.editions }} editions
+    span(v-if="token.aux.mintedEditions.value") {{ token.aux.mintedEditions.value }} edition{{ token.aux.mintedEditions.value.gt(1) || token.aux.mintedEditions.value.eq(0) ? "s" : "" }}
+    Placeholder.inline-block.h-5.w-full(v-else)
     span ⋅
-    span {{ (notNull(token.royalty).royalty * 100).toFixed(1) }}% royalty
+    span(v-if="token.aux.royalty.value") {{ (token.aux.royalty.value * 100).toFixed(1) }}% royalty
+    Placeholder.inline-block.h-5.w-full(v-else)
   slot
 </template>
 

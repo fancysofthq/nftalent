@@ -2,17 +2,41 @@
 import Feed from "@/components/Feed.vue";
 import PFP from "@/components/PFP.vue";
 import TokenListing from "@/components/TokenListing.vue";
-import { events, Listing } from "@/service/db";
+import { onConnect } from "@/service/eth";
 import Account from "@/service/eth/Account";
-import { notNull } from "@/util";
+import { type ListEvent } from "@/service/eth/contract/NFTSimpleListing";
+import { ref, type ShallowRef } from "vue";
+import * as ethEventDb from "@/service/eth/event-db";
+import * as eth from "@/service/eth";
+import { RichToken } from "@/components/RichToken";
+import ERC1155Token from "@/service/eth/contract/ERC1155Token";
+import { BigNumber } from "ethers";
 
 const props = defineProps<{ account: Account }>();
 
-const listings: Listing[] = events.filter(
-  (event) =>
-    event instanceof Listing &&
-    notNull(event.tokenWrapper.minter).equals(props.account)
-);
+type RichListing = {
+  event: ListEvent;
+  token: RichToken;
+};
+
+const listings: ShallowRef<RichListing[]> = ref([]);
+
+onConnect(async () => {
+  const events = await ethEventDb.accountListings(eth.account.value!);
+
+  listings.value = events.map((e) => ({
+    event: e,
+    token: new RichToken(
+      new ERC1155Token(eth.nftime.account, BigNumber.from(e.token.id))
+    ),
+  }));
+
+  listings.value.forEach((l) => {
+    l.token.enrichMetadata();
+    l.token.enrichEth();
+    l.token.enrichPrimaryListing();
+  });
+});
 </script>
 
 <template lang="pug">
@@ -24,7 +48,8 @@ const listings: Listing[] = events.filter(
       h2.text-lg {{ account }}
     h2.font-bold.text-lg ✨ Listings
     .flex.flex-col.border.divide-y
-      TokenListing(v-for="listing in listings" :token="listing.tokenWrapper")
+      //- div(v-for="listing in listings") {{ listing.token.aux }}
+      TokenListing(v-for="listing in listings" :token="listing.token")
     h2.font-bold.text-lg 📰 Feed
     .flex.flex-col.border.divide-y
       Feed(:accountFilter="account")
