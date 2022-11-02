@@ -11,7 +11,7 @@ import { Provider } from "@ethersproject/abstract-provider";
 import { CID } from "multiformats";
 import Account from "../Account";
 import ERC1155Token, { type Metadata as ERC1155Metadata } from "./ERC1155Token";
-import { findEvent, syncEvents } from "../event-db";
+import db, { findEvent, syncEvents } from "../event-db";
 import { Uint8 } from "@/util";
 
 export class ListingConfig {
@@ -139,67 +139,102 @@ export default class NFTSimpleListing {
   }
 
   sync(untilBlock: number) {
+    this.syncListEvents(untilBlock);
+    this.syncPurchaseEvents(untilBlock);
+  }
+
+  private syncListEvents(untilBlock: number) {
+    const listFilter = this.contract.filters.List(
+      null,
+      null,
+      null,
+      import.meta.env.VITE_ADDR_APP.toLowerCase(),
+      null
+    );
+
+    const listMapping = (e: any): ListEvent => ({
+      transactionHash: e.transactionHash,
+      blockNumber: e.blockNumber,
+      logIndex: e.logIndex,
+
+      listingId: e.args!.listingId._hex,
+      token: { id: e.args!.token.id._hex },
+      seller: e.args!.seller.toLowerCase(),
+      appPremium: e.args!.appPremium,
+    });
+
     syncEvents(
       "NFTSimpleListing.List",
       this.contract,
-      this.contract.filters.List(
-        null,
-        null,
-        null,
-        import.meta.env.VITE_ADDR_APP.toLowerCase(),
-        null
-      ),
-      (e) => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
-
-        listingId: e.args!.listingId._hex,
-        token: {
-          contract: e.args!.token.contract_,
-          id: e.args!.token.id._hex,
-        },
-        seller: e.args!.seller.toLowerCase(),
-        appPremium: e.args!.appPremium,
-      }),
+      listFilter,
+      listMapping,
       untilBlock
+    ).then(() => {
+      this.contract.on(listFilter, async (...data) => {
+        const e = data[data.length - 1];
+
+        await db.put("NFTSimpleListing.List", listMapping(e));
+
+        await db.put(
+          "latestFetchedEventBlock",
+          e.blockNumber,
+          "NFTSimpleListing.List"
+        );
+      });
+    });
+  }
+
+  private syncPurchaseEvents(untilBlock: number) {
+    const purchaseFilter = this.contract.filters.Purchase(
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      import.meta.env.VITE_ADDR_APP.toLowerCase(),
+      null,
+      null
     );
+
+    const purchaseMapping = (e: any): PurchaseEvent => ({
+      transactionHash: e.transactionHash,
+      blockNumber: e.blockNumber,
+      logIndex: e.logIndex,
+
+      buyer: e.args!.buyer.toLowerCase(),
+      listingId: e.args!.listingId._hex,
+      token: {
+        id: e.args!.token.id._hex,
+      },
+      amount: BigInt(e.args!.amount._hex),
+      income: BigInt(e.args!.income._hex),
+      royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
+      royaltyValue: BigInt(e.args!.royaltyValue._hex),
+      appPremium: BigInt(e.args!.appPremium._hex),
+      profit: BigInt(e.args!.profit._hex),
+    });
 
     syncEvents(
       "NFTSimpleListing.Purchase",
       this.contract,
-      this.contract.filters.Purchase(
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        import.meta.env.VITE_ADDR_APP.toLowerCase(),
-        null,
-        null
-      ),
-      (e) => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
-
-        buyer: e.args!.buyer.toLowerCase(),
-        listingId: e.args!.listingId._hex,
-        token: {
-          contract: e.args!.token.contract_,
-          id: e.args!.token.id._hex,
-        },
-        amount: BigInt(e.args!.amount._hex),
-        income: BigInt(e.args!.income._hex),
-        royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
-        royaltyValue: BigInt(e.args!.royaltyValue._hex),
-        appPremium: BigInt(e.args!.appPremium._hex),
-        profit: BigInt(e.args!.profit._hex),
-      }),
+      purchaseFilter,
+      purchaseMapping,
       untilBlock
-    );
+    ).then(() => {
+      this.contract.on(purchaseFilter, async (...data) => {
+        const e = data[data.length - 1];
+
+        await db.put("NFTSimpleListing.Purchase", purchaseMapping(e));
+
+        await db.put(
+          "latestFetchedEventBlock",
+          e.blockNumber,
+          "NFTSimpleListing.Purchase"
+        );
+      });
+    });
   }
 
   async getListing(listingId: BigNumber): Promise<Listing | null> {

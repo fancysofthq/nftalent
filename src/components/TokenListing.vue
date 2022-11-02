@@ -16,10 +16,7 @@ const redeemModal = ref(false);
 <template lang="pug">
 //- https://github.com/akauppi/GroundLevel-firebase-es/issues/20#issuecomment-1049968242
 .grid.p-4.gap-3(style="grid-template-columns: 10rem auto" v-bind="$attrs")
-  router-link.font-bold.text-primary.daisy-link-hover(
-    tabindex="-1"
-    :to="'/' + id2Cid(token.token.id)"
-  )
+  router-link.contents(tabindex="-1" :to="'/' + id2Cid(token.token.id)")
     img.rounded-lg.aspect-square.object-cover.w-full(
       v-if="token.aux.metadata.value"
       :src="ipfs.processUri(token.aux.metadata.value.image).toString()"

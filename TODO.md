@@ -1,4 +1,5 @@
-- [ ] Live sync events
+- [x] Live sync events
+- [ ] Rework for new contracts
 - [ ] Hide overflow in Markdown text
 - [ ] Markdown text styling
 - [x] Purchase

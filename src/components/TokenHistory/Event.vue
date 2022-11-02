@@ -64,6 +64,7 @@ const eventActor = computed(() => {
       span {{ ethers.utils.formatEther(BigNumber.from(event.income)) }}
 
     template(v-if="isBurnEvent(event)")
+      // TODO: redeemed 1x[1 hour].
       span {{ event.value }}
 
   .p-4 {{ timestamp?.toLocaleString() }}

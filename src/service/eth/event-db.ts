@@ -1,3 +1,4 @@
+import { timeout } from "@/util";
 import { AddressZero } from "@ethersproject/constants";
 import { Contract, Event, EventFilter } from "ethers";
 import {
@@ -20,7 +21,7 @@ interface EventDB extends DBSchema {
   };
 
   "NFTime.Transfer": {
-    key: [number, number, number]; // blockNumber + logIndex + (token index)
+    key: [number, number, number]; // blockNumber + logIndex + (token id index)
     value: TransferEvent;
     indexes: {
       from: string;
@@ -29,19 +30,30 @@ interface EventDB extends DBSchema {
       fromId: [string, string];
       toId: [string, string];
       fromTo: [string, string];
+      ["to-id-blockNumber"]: [string, string, number];
     };
   };
 
   "NFTSimpleListing.List": {
     key: [number, number]; // blockNumber + logIndex
     value: ListEvent;
-    indexes: { listingId: string; tokenId: string; seller: string };
+    indexes: {
+      listingId: string;
+      tokenId: string;
+      seller: string;
+      ["tokenId-blockNumber"]: [string, number];
+    };
   };
 
   "NFTSimpleListing.Purchase": {
     key: [number, number]; // blockNumber + logIndex
     value: PurchaseEvent;
-    indexes: { buyer: string; tokenId: string; listingId: string };
+    indexes: {
+      buyer: string;
+      tokenId: string;
+      listingId: string;
+      tokenIdBlock: [string, string];
+    };
   };
 }
 // [1]: It should have been `BigInt` instead,
@@ -59,6 +71,7 @@ const db = await openDB<EventDB>("eth_event_db", 1, {
     e1.createIndex("fromId", ["from", "token.id"]);
     e1.createIndex("toId", ["to", "token.id"]);
     e1.createIndex("fromTo", ["from", "to"]);
+    e1.createIndex("to-id-blockNumber", ["to", "token.id", "blockNumber"]);
 
     const e2 = db.createObjectStore("NFTSimpleListing.List", {
       keyPath: ["blockNumber", "logIndex"],
@@ -67,6 +80,7 @@ const db = await openDB<EventDB>("eth_event_db", 1, {
     e2.createIndex("listingId", "listingId");
     e2.createIndex("tokenId", "token.id");
     e2.createIndex("seller", "seller");
+    e2.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
 
     const e3 = db.createObjectStore("NFTSimpleListing.Purchase", {
       keyPath: ["blockNumber", "logIndex"],
@@ -75,6 +89,7 @@ const db = await openDB<EventDB>("eth_event_db", 1, {
     e3.createIndex("buyer", "buyer");
     e3.createIndex("tokenId", "token.id");
     e3.createIndex("listingId", "listingId");
+    e3.createIndex("tokenIdBlock", ["token.id", "blockNumber"]);
 
     const latestFetchedEventBlock = db.createObjectStore(
       "latestFetchedEventBlock"
@@ -122,16 +137,11 @@ export async function syncEvents<Store extends StoreNames<EventDB>>(
     parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
     0;
 
-  // console.debug(fromBlock);
-
   while (fromBlock < finalBlock) {
     const toBlock = Math.min(finalBlock, fromBlock + SYNC_BLOCK_BATCH_SIZE);
-    // console.debug(fromBlock, toBlock);
 
     const rawEvents = await contract.queryFilter(filter, fromBlock, toBlock);
-    console.debug(rawEvents);
     const mappedEvents = rawEvents.flatMap(eventCallback);
-    console.debug(mappedEvents);
 
     if (mappedEvents.length > 0) await putBatch(eventStore, mappedEvents);
     await db.put("latestFetchedEventBlock", toBlock, eventStore);
@@ -174,7 +184,6 @@ export async function iterateEventIndex<
 ): Promise<void> {
   const tx = db.transaction(eventStore);
   const _index = tx.objectStore(eventStore).index(index);
-
   let cursor = await _index.openCursor(query, direction);
 
   while (cursor) {
@@ -202,42 +211,71 @@ export async function findEvent<
 export default db;
 
 export async function tokenHistory(
-  token: ERC1155Token
-): Promise<(ListEvent | PurchaseEvent | BurnEvent)[]> {
-  // * [x] Listed
-  // * [x] Purchased
-  // * [x] Redeemed
+  token: ERC1155Token,
+  callback: (events: (ListEvent | PurchaseEvent | BurnEvent)[]) => void,
+  pollInterval: number,
+  pollCancel: () => boolean
+) {
+  let transferBlock = 0;
+  let listBlock = 0;
+  let purchaseBlock = 0;
 
-  const events: (ListEvent | PurchaseEvent | BurnEvent)[] = [];
+  while (!pollCancel()) {
+    const events: (ListEvent | PurchaseEvent | BurnEvent)[] = [];
 
-  await Promise.all([
-    iterateEventIndex(
-      "NFTime.Transfer",
-      "toId",
-      [AddressZero, token.id._hex],
-      "prev",
-      (e) => events.push(e)
-    ),
+    await Promise.all([
+      // Burning
+      iterateEventIndex(
+        "NFTime.Transfer",
+        "to-id-blockNumber",
+        IDBKeyRange.bound(
+          [AddressZero, token.id._hex, transferBlock],
+          [AddressZero, token.id._hex, Number.MAX_SAFE_INTEGER]
+        ),
+        "next",
+        (e) => {
+          transferBlock = e.blockNumber + 1;
+          events.push(e);
+        }
+      ),
 
-    findEvent(
-      "NFTSimpleListing.List",
-      "tokenId",
-      token.id._hex,
-      "nextunique"
-    ).then((e) => {
-      if (e) events.push(e);
-    }),
+      // Listing
+      iterateEventIndex(
+        "NFTSimpleListing.List",
+        "tokenId-blockNumber",
+        IDBKeyRange.bound(
+          [token.id._hex, listBlock],
+          [token.id._hex, Number.MAX_SAFE_INTEGER]
+        ),
+        "next",
+        (e) => {
+          listBlock = e.blockNumber + 1;
+          events.push(e);
+        }
+      ),
 
-    iterateEventIndex(
-      "NFTSimpleListing.Purchase",
-      "tokenId",
-      token.id._hex,
-      "prev",
-      (e) => events.push(e)
-    ),
-  ]);
+      // Purchasing
+      iterateEventIndex(
+        "NFTSimpleListing.Purchase",
+        "tokenIdBlock",
+        IDBKeyRange.bound(
+          [token.id._hex, purchaseBlock],
+          [token.id._hex, Number.MAX_SAFE_INTEGER]
+        ),
+        "next",
+        (e) => {
+          purchaseBlock = e.blockNumber + 1;
+          events.push(e);
+        }
+      ),
+    ]);
 
-  return events.sort((a, b) => b.blockNumber - a.blockNumber);
+    callback(events.sort((a, b) => b.blockNumber - a.blockNumber));
+
+    await timeout(pollInterval);
+  }
+
+  console.debug("Polling cancelled");
 }
 
 export async function accountListings(account: Account): Promise<ListEvent[]> {
