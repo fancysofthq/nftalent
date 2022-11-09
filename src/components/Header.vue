@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /// <reference types="vite-svg-loader" />
-import { account, login, logout } from "@/service/eth";
-import PFP from "./PFP.vue";
+import { account, login, logout } from "@/services/eth";
+import PFP from "./shared/PFP.vue";
 import Bars3Icon from "@/assets/bars-2.svg?component";
 </script>
 

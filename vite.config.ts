@@ -6,13 +6,7 @@ import svgLoader from "vite-svg-loader";
 // https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
-    alias: [
-      { find: "@", replacement: path.join(__dirname, "src") },
-      {
-        find: /^buffer$/,
-        replacement: "rollup-plugin-node-polyfills/polyfills/buffer-es6",
-      },
-    ],
+    alias: [{ find: "@", replacement: path.join(__dirname, "src") }],
     preserveSymlinks: true,
     // To allow importing `.d.ts` files.
     extensions: [

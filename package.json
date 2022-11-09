@@ -11,14 +11,17 @@
     "@vueuse/components": "^9.4.0",
     "@vueuse/core": "^9.4.0",
     "axios": "^1.1.3",
+    "buffer": "^6.0.3",
+    "date-fns": "^2.29.3",
     "ethers": "^5.7.2",
     "idb": "^7.1.0",
+    "ipfs-car": "^0.9.1",
     "jdenticon": "^3.2.0",
-    "multiformats": "^10.0.2",
-    "nft.storage": "^7.0.0",
+    "multiformats": "^9.6.3",
     "vue": "^3.2.41",
     "vue-router": "^4.1.6",
-    "vue3-markdown-it": "^1.0.10"
+    "vue3-markdown-it": "^1.0.10",
+    "web3.storage": "^4.4.0"
   },
   "devDependencies": {
     "@prettier/plugin-pug": "^2.2.0",

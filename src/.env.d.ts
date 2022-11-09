@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_ADDR_APP: string;
-  readonly VITE_ADDR_NFTIME: string;
-  readonly VITE_ADDR_NFT_SIMPLE_LISTING: string;
+  readonly VITE_APP_ADDRESS: string;
+  readonly VITE_IPNFT721_ADDRESS: string;
+  readonly VITE_IPNFT1155_ADDRESS: string;
+  readonly VITE_ERC1876_REDEEMABLE_ADDRESS: string;
+  readonly VITE_NFT_SIMPLE_LISTING_ADDRESS: string;
 }
 
 interface ImportMeta {

@@ -1,12 +1,10 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import Home from "./view/Home.vue";
-import Settings from "./view/Settings.vue";
-import Mint from "./view/Mint.vue";
-import Profile from "./view/Profile.vue";
-import Token from "./view/Token.vue";
-import Account from "./service/eth/Account";
-import ERC1155Token from "./service/eth/contract/ERC1155Token";
-import { BigNumber } from "ethers";
+import Home from "./views/Home.vue";
+import Settings from "./views/Settings.vue";
+import Mint from "./views/Mint.vue";
+import Profile from "./views/Profile.vue";
+import Token from "./views/Token.vue";
+import Account from "./services/eth/Account";
 import { CID } from "multiformats";
 import { base32 } from "multiformats/bases/base32";
 
@@ -17,7 +15,7 @@ export default createRouter({
     { path: "/settings", component: Settings },
     { path: "/mint", component: Mint },
     {
-      path: "/:cid(bafy[0-7a-zA-Z]{55})",
+      path: "/:cid(baf[0-7a-zA-Z]{56})",
       component: Token,
       meta: { name: "Token" },
       props: (route) => ({

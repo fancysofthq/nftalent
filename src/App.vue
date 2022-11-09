@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import * as eth from "@/service/eth";
+import * as eth from "@/services/eth";
 import HeaderVue from "./components/Header.vue";
 import FooterVue from "./components/Footer.vue";
 
-onMounted(() => {
-  const provider = window.localStorage.getItem(eth.PROVIDER_KEY);
-  if (provider) eth.login();
-});
+onMounted(eth.tryLogin);
 </script>
 
 <template lang="pug">

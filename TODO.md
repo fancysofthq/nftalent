@@ -1,5 +1,5 @@
 - [x] Live sync events
-- [ ] Rework for new contracts
+- [x] Rework for new contracts
 - [ ] Hide overflow in Markdown text
 - [ ] Markdown text styling
 - [x] Purchase
@@ -9,8 +9,14 @@
   - [x] Action
   - [x] Feed entry
 - [ ] Reload profile page when clicking another account
-- [ ] Rework feed entry
-- [ ] Time ago
-  - [ ] Minted
-  - [ ] Expires
-  - [ ] Feed
+- [x] Rework feed entry
+- [x] Time ago
+  - [x] Minted
+  - [x] Expires
+  - [x] Feed
+- [ ] Web2
+  - [ ] Auth
+  - [ ] Explore tab
+  - [ ] Subscribe to profiles
+- [ ] Persona
+- [ ] On account change
