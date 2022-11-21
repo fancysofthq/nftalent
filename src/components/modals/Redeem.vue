@@ -3,11 +3,12 @@ import { OnClickOutside } from "@vueuse/components";
 import { BigNumber } from "ethers";
 import { computed, ref } from "vue";
 import * as eth from "@/services/eth";
-import IPNFTSuper from "@/models/IPNFTSuper";
+import IPNFT from "@/models/IPNFT";
 import Chip from "@/components/shared/Chip.vue";
+import IPNFTRedeemable from "@/services/eth/contract/IPNFT1155";
 
 const props = defineProps<{
-  ipnft: IPNFTSuper;
+  ipnft: IPNFT;
   balance: BigNumber;
 }>();
 
@@ -24,7 +25,7 @@ const canTransact = computed(
 async function transact() {
   const tx = await eth.ipnft1155.safeTransferFrom(
     eth.account.value!,
-    eth.erc1876Redeemable.account,
+    IPNFTRedeemable.account,
     props.ipnft.token,
     BigNumber.from(redeemAmount.value)
   );
@@ -34,7 +35,7 @@ async function transact() {
 </script>
 
 <template lang="pug">
-.fixed.top-0.w-full.bg-black.bg-opacity-25.z-10.h-screen.flex.justify-center.items-center.backdrop-blur
+.fixed.top-0.w-full.bg-black.bg-opacity-25.z-20.h-screen.flex.justify-center.items-center.backdrop-blur
   OnClickOutside.transition-opacity.w-full.max-w-lg.bg-base-100.rounded-lg.shadow-lg(
     @trigger="emit('close')"
   )

@@ -1,5 +1,7 @@
 import { BigNumber } from "ethers";
 import Account from "../Account";
+import { EventBase } from "./common";
+import { NFT } from "./NFT";
 
 /**
  * Solidity mapping:
@@ -12,11 +14,7 @@ import Account from "../Account";
  * )
  * ```
  */
-export type Transfer = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
-
+export type Transfer = EventBase & {
   from: string;
   to: string;
   tokenId: string;
@@ -33,5 +31,12 @@ export class Token {
 
   equals(other: Token): boolean {
     return this.contract.equals(other.contract) && this.id.eq(other.id);
+  }
+
+  toNFT(): NFT {
+    return {
+      contract: this.contract,
+      id: this.id,
+    };
   }
 }

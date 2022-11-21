@@ -1,6 +1,7 @@
-import { AddressZero } from "@ethersproject/constants";
 import { BigNumber } from "ethers";
 import Account from "../Account";
+import { EventBase } from "./common";
+import { NFT } from "./NFT";
 
 export type Metadata = {
   name: string;
@@ -30,12 +31,8 @@ export type Metadata = {
  * );
  * ```
  */
-export type Transfer = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
+export type Transfer = EventBase & {
   subIndex: number; // NOTE: Would always be 0 for TransferSingle
-
   from: string;
   to: string;
   id: string; // NOTE: [^1]
@@ -53,5 +50,12 @@ export class Token {
 
   equals(other: Token): boolean {
     return this.contract.equals(other.contract) && this.id.eq(other.id);
+  }
+
+  toNFT(): NFT {
+    return {
+      contract: this.contract,
+      id: this.id,
+    };
   }
 }

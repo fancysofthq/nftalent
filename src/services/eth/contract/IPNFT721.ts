@@ -1,16 +1,14 @@
-import { Ipnft721 as BaseType } from "./abi/types/Ipnft721";
-import { abi } from "./abi/IPNFT721.json";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
+import { BigNumber } from "ethers";
+import { Ipnft721 as BaseType } from "@/../lib/ipnft/waffle/types/Ipnft721";
+import { abi } from "@/../lib/ipnft/waffle/IPNFT721.json";
+import { ContractTransaction, Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import { CID } from "multiformats";
 import Account from "../Account";
 import { indexOfMulti, Uint8 } from "@/util";
-import { sha256 } from "multiformats/hashes/sha2";
-import * as dagCbor from "@ipld/dag-cbor";
 import { Buffer } from "buffer";
 import { EventDB } from "../event-db";
 import { Transfer } from "./IERC721";
-import { Token, Tag } from "./IPNFT";
+import * as IPNFT from "./IPNFT";
 import * as Block from "multiformats/block";
 
 export default class IPNFT721 {
@@ -32,7 +30,7 @@ export default class IPNFT721 {
   async mint(
     to: Account,
     content: Block.Block<unknown>,
-    tag: Tag,
+    tag: IPNFT.Tag,
     royalty: Uint8
   ): Promise<ContractTransaction> {
     const tagOffset = indexOfMulti(content.bytes, tag.bytes);
@@ -45,7 +43,6 @@ export default class IPNFT721 {
       content.cid.multihash.digest,
       content.bytes,
       tagOffset,
-      content.cid.code,
       royalty.value
     );
   }
@@ -54,19 +51,33 @@ export default class IPNFT721 {
     return await this._contract.minterNonce(minter.toString());
   }
 
-  async ownerOf(token: Token): Promise<Account> {
+  async isApprovedForAll(owner: Account, operator: Account): Promise<boolean> {
+    return await this._contract.isApprovedForAll(
+      owner.toString(),
+      operator.toString()
+    );
+  }
+
+  async setApprovalForAll(operator: Account, approved: boolean) {
+    return await this._contract.setApprovalForAll(
+      operator.toString(),
+      approved
+    );
+  }
+
+  async ownerOf(token: IPNFT.Token): Promise<Account> {
     return new Account(await this._contract.ownerOf(token.id));
   }
 
-  async tokenUri(token: Token): Promise<URL> {
+  async tokenUri(token: IPNFT.Token): Promise<URL> {
     return new URL(await this._contract.tokenURI(token.id));
   }
 
-  async royalty(token: Token): Promise<Uint8> {
+  async royalty(token: IPNFT.Token): Promise<Uint8> {
     return new Uint8(await this._contract.royalty(token.id));
   }
 
-  async royaltyNumber(token: Token): Promise<number> {
+  async royaltyNumber(token: IPNFT.Token): Promise<number> {
     return await this.royalty(token).then((r) => r.value / Uint8.max.value);
   }
 

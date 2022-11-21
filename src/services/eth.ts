@@ -1,10 +1,9 @@
 import { ethers } from "ethers";
-import { computed, ref, ShallowRef } from "vue";
+import { ref, ShallowRef } from "vue";
 import Account from "./eth/Account";
-import NFTSimpleListing from "./eth/contract/NFTSimpleListing";
 import IPNFT721 from "./eth/contract/IPNFT721";
 import IPNFT1155 from "./eth/contract/IPNFT1155";
-import ERC1876Redeemable from "./eth/contract/ERC1876Redeemable";
+import MetaStore from "./eth/contract/MetaStore";
 import edb from "./eth/event-db";
 
 const PROVIDER_KEY = "eth.wallet.provider";
@@ -16,8 +15,7 @@ export const app = new Account(import.meta.env.VITE_APP_ADDRESS);
 
 export let ipnft721: IPNFT721;
 export let ipnft1155: IPNFT1155;
-export let erc1876Redeemable: ERC1876Redeemable;
-export let nftSimpleListing: NFTSimpleListing;
+export let metaStore: MetaStore;
 
 export async function tryLogin() {
   const storedProvider = window.localStorage.getItem(PROVIDER_KEY);
@@ -44,16 +42,14 @@ export async function login() {
 
   ipnft721 = new IPNFT721(provider.value.getSigner());
   ipnft1155 = new IPNFT1155(provider.value.getSigner());
-  erc1876Redeemable = new ERC1876Redeemable(provider.value.getSigner());
-  nftSimpleListing = new NFTSimpleListing(provider.value.getSigner());
+  metaStore = new MetaStore(provider.value.getSigner());
 
   provider.value.getBlockNumber().then((untilBlock) => {
     console.debug("Syncing events until block", untilBlock);
 
     ipnft721.sync(edb, untilBlock);
     ipnft1155.sync(edb, untilBlock);
-    erc1876Redeemable.sync(edb, untilBlock);
-    nftSimpleListing.sync(edb, app.address, untilBlock);
+    metaStore.sync(edb, app.address, untilBlock);
   });
 
   fireOnConnectCallbacks();

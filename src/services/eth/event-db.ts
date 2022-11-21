@@ -10,19 +10,11 @@ import {
 } from "idb";
 import { Transfer as IERC1155Transfer } from "./contract/IERC1155";
 import { Transfer as IERC721Transfer } from "./contract/IERC721";
-import {
-  List,
-  Replenish,
-  Withdraw,
-  Purchase,
-} from "./contract/NFTSimpleListing";
-import { Qualify, Redeem } from "./contract/ERC1876Redeemable";
+import { List, Replenish, Withdraw, Purchase } from "./contract/MetaStore";
 
 export type Event =
   | IERC721Transfer
   | IERC1155Transfer
-  | Qualify
-  | Redeem
   | List
   | Replenish
   | Withdraw
@@ -31,8 +23,6 @@ export type Event =
 export type {
   IERC721Transfer,
   IERC1155Transfer,
-  Qualify,
-  Redeem,
   List,
   Replenish,
   Withdraw,
@@ -55,6 +45,7 @@ interface Schema extends DBSchema {
       tokenId: string;
       ["from-blockNumber"]: [string, number];
       ["from-tokenId"]: [string, string];
+      ["from-to-blockNumber"]: [string, string, number];
       ["to-blockNumber"]: [string, number];
       ["tokenId-blockNumber"]: [string, number];
       ["to-tokenId-blockNumber"]: [string, string, number];
@@ -70,6 +61,8 @@ interface Schema extends DBSchema {
       to: string;
       id: string;
       ["from-blockNumber"]: [string, number];
+      ["from-id"]: [string, string];
+      ["from-to-blockNumber"]: [string, string, number];
       ["to-blockNumber"]: [string, number];
       ["id-blockNumber"]: [string, number];
       ["to-id-blockNumber"]: [string, string, number];
@@ -77,33 +70,7 @@ interface Schema extends DBSchema {
     foo: "bar";
   };
 
-  "ERC1876Redeemable.Qualify": {
-    key: [number, number]; // blockNumber + logIndex
-    value: Qualify;
-    indexes: {
-      blockNumber: number;
-      operator: string;
-      tokenId: string;
-      ["operator-blockNumber"]: [string, number];
-      ["tokenId-blockNumber"]: [string, number];
-    };
-  };
-
-  "ERC1876Redeemable.Redeem": {
-    key: [number, number, number]; // blockNumber + logIndex + subIndex
-    value: Redeem;
-    indexes: {
-      blockNumber: number;
-      operator: string;
-      redeemer: string;
-      tokenId: string;
-      ["operator-blockNumber"]: [string, number];
-      ["redeemer-blockNumber"]: [string, number];
-      ["tokenId-blockNumber"]: [string, number];
-    };
-  };
-
-  "NFTSimpleListing.List": {
+  "MetaStore.List": {
     key: [number, number]; // blockNumber + logIndex
     value: List;
     indexes: {
@@ -116,37 +83,33 @@ interface Schema extends DBSchema {
     };
   };
 
-  "NFTSimpleListing.Replenish": {
+  "MetaStore.Replenish": {
     key: [number, number]; // blockNumber + logIndex
     value: Replenish;
     indexes: {
       blockNumber: number;
       tokendId: string;
       listingId: string;
-      operator: string;
       ["tokenId-blockNumber"]: [string, number];
       ["listingId-blockNumber"]: [string, number];
-      ["operator-blockNumber"]: [string, number];
     };
   };
 
-  "NFTSimpleListing.Withdraw": {
+  "MetaStore.Withdraw": {
     key: [number, number]; // blockNumber + logIndex
     value: Withdraw;
     indexes: {
       blockNumber: number;
       tokendId: string;
       listingId: string;
-      operator: string;
       to: string;
       ["tokenId-blockNumber"]: [string, number];
       ["listingId-blockNumber"]: [string, number];
-      ["operator-blockNumber"]: [string, number];
       ["to-blockNumber"]: [string, number];
     };
   };
 
-  "NFTSimpleListing.Purchase": {
+  "MetaStore.Purchase": {
     key: [number, number]; // blockNumber + logIndex
     value: Purchase;
     indexes: {
@@ -179,6 +142,7 @@ export class EventDB {
         e1.createIndex("tokenId", "tokenId");
         e1.createIndex("from-blockNumber", ["from", "blockNumber"]);
         e1.createIndex("from-tokenId", ["from", "tokenId"]);
+        e1.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
         e1.createIndex("to-blockNumber", ["to", "blockNumber"]);
         e1.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
         e1.createIndex("to-tokenId-blockNumber", [
@@ -196,80 +160,51 @@ export class EventDB {
         e2.createIndex("to", "to");
         e2.createIndex("id", "id");
         e2.createIndex("from-blockNumber", ["from", "blockNumber"]);
+        e2.createIndex("from-id", ["from", "id"]);
+        e2.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
         e2.createIndex("to-blockNumber", ["to", "blockNumber"]);
         e2.createIndex("id-blockNumber", ["id", "blockNumber"]);
         e2.createIndex("to-id-blockNumber", ["to", "id", "blockNumber"]);
 
-        const e3 = db.createObjectStore("ERC1876Redeemable.Qualify", {
+        const e3 = db.createObjectStore("MetaStore.List", {
           keyPath: ["blockNumber", "logIndex"],
         });
 
         e3.createIndex("blockNumber", "blockNumber");
-        e3.createIndex("operator", "operator");
-        e3.createIndex("tokenId", "tokenId");
-        e3.createIndex("operator-blockNumber", ["operator", "blockNumber"]);
-        e3.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
+        e3.createIndex("listingId", "listingId");
+        e3.createIndex("tokenId", "token.id");
+        e3.createIndex("seller", "seller");
+        e3.createIndex("seller-blockNumber", ["seller", "blockNumber"]);
+        e3.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
 
-        const e4 = db.createObjectStore("ERC1876Redeemable.Redeem", {
-          keyPath: ["blockNumber", "logIndex", "subIndex"],
+        const e4 = db.createObjectStore("MetaStore.Replenish", {
+          keyPath: ["blockNumber", "logIndex"],
         });
 
         e4.createIndex("blockNumber", "blockNumber");
-        e4.createIndex("operator", "operator");
-        e4.createIndex("redeemer", "redeemer");
-        e4.createIndex("tokenId", "tokenId");
-        e4.createIndex("operator-blockNumber", ["operator", "blockNumber"]);
-        e4.createIndex("redeemer-blockNumber", ["redeemer", "blockNumber"]);
-        e4.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
+        e4.createIndex("listingId", "listingId");
+        e4.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
 
-        const e5 = db.createObjectStore("NFTSimpleListing.List", {
+        const e5 = db.createObjectStore("MetaStore.Withdraw", {
           keyPath: ["blockNumber", "logIndex"],
         });
 
         e5.createIndex("blockNumber", "blockNumber");
         e5.createIndex("listingId", "listingId");
-        e5.createIndex("tokenId", "token.id");
-        e5.createIndex("seller", "seller");
-        e5.createIndex("seller-blockNumber", ["seller", "blockNumber"]);
-        e5.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
+        e5.createIndex("to", "to");
+        e5.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
+        e5.createIndex("to-blockNumber", ["to", "blockNumber"]);
 
-        const e6 = db.createObjectStore("NFTSimpleListing.Replenish", {
+        const e6 = db.createObjectStore("MetaStore.Purchase", {
           keyPath: ["blockNumber", "logIndex"],
         });
 
         e6.createIndex("blockNumber", "blockNumber");
-        e6.createIndex("tokendId", "token.id");
         e6.createIndex("listingId", "listingId");
-        e6.createIndex("operator", "operator");
+        e6.createIndex("buyer", "buyer");
         e6.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
         e6.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-        e6.createIndex("operator-blockNumber", ["operator", "blockNumber"]);
-
-        const e7 = db.createObjectStore("NFTSimpleListing.Withdraw", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
-
-        e7.createIndex("blockNumber", "blockNumber");
-        e7.createIndex("tokendId", "token.id");
-        e7.createIndex("listingId", "listingId");
-        e7.createIndex("operator", "operator");
-        e7.createIndex("to", "to");
-        e7.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
-        e7.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-        e7.createIndex("operator-blockNumber", ["operator", "blockNumber"]);
-        e7.createIndex("to-blockNumber", ["to", "blockNumber"]);
-
-        const e8 = db.createObjectStore("NFTSimpleListing.Purchase", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
-
-        e8.createIndex("blockNumber", "blockNumber");
-        e8.createIndex("tokenId", "token.id");
-        e8.createIndex("listingId", "listingId");
-        e8.createIndex("buyer", "buyer");
-        e8.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
-        e8.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-        e8.createIndex("buyer-blockNumber", ["buyer", "blockNumber"]);
+        e6.createIndex("buyer-blockNumber", ["buyer", "blockNumber"]);
 
         const latestFetchedEventBlock = db.createObjectStore(
           "latestFetchedEventBlock"

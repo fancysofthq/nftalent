@@ -1,14 +1,15 @@
-import { Ipnft1155 as BaseType } from "./abi/types/Ipnft1155";
-import { abi } from "./abi/IPNFT1155.json";
+import { IpnftRedeemable as BaseType } from "@/../lib/ipnft/waffle/types/IpnftRedeemable";
+import { abi } from "@/../lib/ipnft/waffle/IPNFT1155.json";
 import { BigNumber, BigNumberish, BytesLike, Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import Account from "../Account";
 import { EventDB } from "../event-db";
 import { Transfer } from "./IERC1155";
-import { Token } from "./IPNFT";
+import * as IPNFT from "./IPNFT";
 
 export default class IPNFT1155 {
   static readonly account = new Account(import.meta.env.VITE_IPNFT1155_ADDRESS);
+
   private readonly _contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
@@ -26,9 +27,10 @@ export default class IPNFT1155 {
 
   async mint(
     to: Account,
-    token: Token,
+    token: IPNFT.Token,
     amount: BigNumberish,
     finalize: boolean,
+    expiresAt: Date,
     data: BytesLike
   ) {
     return await this._contract.mint(
@@ -36,6 +38,7 @@ export default class IPNFT1155 {
       token.id,
       amount,
       finalize,
+      Math.round(expiresAt.valueOf() / 1000),
       data
     );
   }
@@ -43,7 +46,7 @@ export default class IPNFT1155 {
   async safeTransferFrom(
     from: Account,
     to: Account,
-    token: Token,
+    token: IPNFT.Token,
     amount: BigNumberish,
     data: BytesLike = []
   ) {
@@ -56,16 +59,22 @@ export default class IPNFT1155 {
     );
   }
 
-  async balanceOf(account: Account, token: Token): Promise<BigNumber> {
+  async balanceOf(account: Account, token: IPNFT.Token): Promise<BigNumber> {
     return await this._contract.balanceOf(account.address, token.id);
   }
 
-  async totalSupply(token: Token): Promise<BigNumber> {
+  async totalSupply(token: IPNFT.Token): Promise<BigNumber> {
     return await this._contract.totalSupply(token.id);
   }
 
-  async finalized(token: Token): Promise<boolean> {
+  async finalized(token: IPNFT.Token): Promise<boolean> {
     return await this._contract.isFinalized(token.id);
+  }
+
+  async expiredAt(token: IPNFT.Token): Promise<Date> {
+    return new Date(
+      (await this._contract.expiredAt(token.id)).toNumber() * 1000
+    );
   }
 
   private async _syncTransferSingle(edb: EventDB, untilBlock: number) {

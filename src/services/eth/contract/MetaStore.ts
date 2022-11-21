@@ -1,5 +1,5 @@
-import { NftSimpleListing as BaseType } from "./abi/types/NftSimpleListing";
-import { abi } from "./abi/NFTSimpleListing.json";
+import { MetaStore as BaseType } from "@/../lib/meta/waffle/types/MetaStore";
+import { abi } from "@/../lib/meta/waffle/MetaStore.json";
 import {
   BigNumber,
   BigNumberish,
@@ -13,65 +13,106 @@ import Account from "../Account";
 import { Token as ERC1155Token } from "./IERC1155";
 import { EventDB } from "../event-db";
 import { app } from "../../eth";
+import { EventBase } from "./common";
+import { type NFT } from "./NFT";
+import IPNFT721 from "./IPNFT721";
 import IPNFT1155 from "./IPNFT1155";
 
 export class ListingConfig {
-  price: BigNumberish;
+  seller: string;
   app: string;
+  price: BigNumberish;
 
-  constructor(price: BigNumberish, app: string) {
-    this.price = price;
+  constructor(seller: string, app: string, price: BigNumberish) {
+    this.seller = seller;
     this.app = app;
+    this.price = price;
   }
 
   toBytes(): BytesLike {
     return ethers.utils.defaultAbiCoder.encode(
-      ["address", "uint256"],
-      [this.app.toString(), this.price]
+      ["address", "address", "uint256"],
+      [this.seller, this.app, this.price]
     );
   }
 }
 
 export class Listing {
-  static id(token: ERC1155Token, seller: Account): BytesLike {
-    console.debug(
-      "Listing.id",
-      token.contract.address,
-      seller.address,
-      app.address
-    );
-    return ethers.utils.solidityKeccak256(
-      ["address", "uint256", "address", "address"],
-      [token.contract.address, token.id, seller.address, app.address]
+  static id(token: NFT, seller: Account): BytesLike {
+    return ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "uint256", "address", "address"],
+        [token.contract.address, token.id, seller.address, app.address]
+      )
     );
   }
 
+  static idHex(token: NFT, seller: Account): string {
+    return ethers.utils.hexlify(Listing.id(token, seller));
+  }
+
+  static fromRawEvent(e: any): Listing {
+    return new Listing({
+      token: new ERC1155Token(
+        new Account(e.args!.token.contract_ as string),
+        e.args!.token.id as BigNumber
+      ),
+      seller: new Account(e.args!.seller as string),
+      app,
+      price: e.args!.price as BigNumber,
+      stockSize: e.args!.stockSize as BigNumber,
+      blockNumber: e.blockNumber as number,
+    });
+  }
+
+  static fromDBEvent(e: List): Listing {
+    return new Listing({
+      token: {
+        contract: IPNFT1155.account,
+        id: BigNumber.from(e.token.id),
+      },
+      seller: new Account(e.seller),
+      app: app,
+      price: BigNumber.from(0),
+      stockSize: BigNumber.from(0),
+      blockNumber: e.blockNumber,
+    });
+  }
+
   id: BytesLike;
-  token: ERC1155Token;
+  token: NFT;
   seller: Account;
   app: Account;
   price: BigNumber;
   stockSize: BigNumber;
 
-  /** The original listing's block. */
-  block?: number;
+  /** The original listing's blockNumber. */
+  blockNumber?: number;
 
-  constructor(
-    id: BytesLike,
-    token: ERC1155Token,
-    seller: Account,
-    app: Account,
-    price: BigNumber,
-    stockSize: BigNumber,
-    block?: number
-  ) {
-    this.id = id;
+  constructor({
+    id,
+    token,
+    seller,
+    app,
+    price,
+    stockSize,
+    blockNumber,
+  }: {
+    id?: BytesLike;
+    token: NFT;
+    seller: Account;
+    app: Account;
+    price: BigNumber;
+    stockSize: BigNumber;
+    blockNumber?: number;
+  }) {
+    this.id = id || Listing.id(token, seller);
     this.token = token;
     this.seller = seller;
     this.app = app;
     this.price = price;
     this.stockSize = stockSize;
-    this.block = block;
+    this.blockNumber = blockNumber;
   }
 }
 
@@ -81,32 +122,17 @@ export class Listing {
  * Solidity mapping:
  *
  * ```solidity
- * event List(
- *     address operator,
- *     NFT indexed token,
- *     address indexed seller,
- *     address indexed appAddress,
- *     bytes32 listingId,
- *     uint256 price,
- *     uint256 stockSize
- * );
+ * event List(NFT token, address indexed seller, address indexed appAddress);
  * ```
  */
-export type List = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
-
-  operator: string;
+export type List = EventBase & {
   token: {
     // contract: string; // NOTE: The contract address is well-known
     id: string;
   };
   seller: string;
   // appAddress: string; // NOTE: It won't contain other app's listings anyway
-  listingId: string;
-  price: BigInt;
-  stockSize: BigInt;
+  listingId: string; // NOTE: Generated
 };
 
 /**
@@ -116,26 +142,20 @@ export type List = {
  *
  * ```solidity
  * event Replenish(
- *     NFT token,
+ *     NFT token, // ADHOC: Excessive information.
  *     address indexed appAddress,
  *     bytes32 indexed listingId,
- *     address operator,
  *     uint256 price,
  *     uint256 amount
  * );
  */
-export type Replenish = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
-
+export type Replenish = EventBase & {
   token: {
     // contract: string; // NOTE: The contract address is well-known
     id: string;
   };
   // appAddress: string; // NOTE: It won't contain other app's listings anyway
   listingId: string;
-  operator: string;
   price: BigInt;
   amount: BigInt;
 };
@@ -147,7 +167,7 @@ export type Replenish = {
  *
  * ```solidity
  * event Withdraw(
- *     NFT token,
+ *     NFT token, // ADHOC: Excessive information.
  *     address indexed appAddress,
  *     bytes32 indexed listingId,
  *     address to,
@@ -155,18 +175,13 @@ export type Replenish = {
  * );
  * ```
  */
-export type Withdraw = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
-
+export type Withdraw = EventBase & {
   token: {
     // contract: string; // NOTE: The contract address is well-known
     id: string;
   };
   // appAddress: string; // NOTE: It won't contain other app's listings anyway
   listingId: string;
-  operator: string;
   to: string;
   amount: BigInt;
 };
@@ -176,7 +191,7 @@ export type Withdraw = {
  *
  * ```solidity
  * event Purchase(
- *     NFT token,
+ *     NFT token, // ADHOC: Excessive information.
  *     bytes32 indexed listingId,
  *     address indexed buyer,
  *     uint256 amount,
@@ -185,15 +200,12 @@ export type Withdraw = {
  *     uint256 royaltyValue,
  *     address indexed appAddress,
  *     uint256 appFee,
+ *     uint256 baseFee,
  *     uint256 profit
  * );
  * ```
  */
-export type Purchase = {
-  transactionHash: string;
-  blockNumber: number;
-  logIndex: number;
-
+export type Purchase = EventBase & {
   token: {
     // contract: string; // NOTE: The contract address is well-known
     id: string;
@@ -206,26 +218,23 @@ export type Purchase = {
   royaltyValue: BigInt;
   // appAddress: string; // NOTE: It won't contain other app's listings anyway
   appFee: BigInt;
+  baseFee: BigInt;
   profit: BigInt;
 };
 
-export default class NFTSimpleListing {
+export default class MetaStore {
   static readonly account = new Account(
-    import.meta.env.VITE_NFT_SIMPLE_LISTING_ADDRESS
+    import.meta.env.VITE_META_STORE_ADDRESS
   );
 
   readonly contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
     this.contract = new BaseType(
-      NFTSimpleListing.account.address,
+      MetaStore.account.address,
       abi,
       providerOrSigner
     );
-  }
-
-  get address(): string {
-    return NFTSimpleListing.account.address;
   }
 
   sync(edb: EventDB, appAddress: string, untilBlock: number) {
@@ -241,29 +250,13 @@ export default class NFTSimpleListing {
   async listingsByAccount(account: Account): Promise<Listing[]> {
     const filter = this.contract.filters.List(
       null,
-      null,
       account.address,
-      app.address,
-      null,
-      null,
-      null
+      app.address
     );
 
-    const mapping = (e: any) =>
-      new Listing(
-        e.args!.listingId as string,
-        new ERC1155Token(
-          new Account(e.args!.token.contract_ as string),
-          e.args!.token.id as BigNumber
-        ),
-        new Account(e.args!.seller as string),
-        app,
-        e.args!.price as BigNumber,
-        e.args!.stockSize as BigNumber,
-        e.blockNumber
-      );
-
-    return (await this.contract.queryFilter(filter)).reverse().map(mapping);
+    return (await this.contract.queryFilter(filter))
+      .reverse()
+      .map((e: any) => Listing.fromRawEvent(e));
   }
 
   async getListing(listingId: BytesLike): Promise<Listing | undefined> {
@@ -273,18 +266,33 @@ export default class NFTSimpleListing {
       return undefined;
     }
 
-    return new Listing(
-      listingId,
-      new ERC1155Token(new Account(listing.token.contract_), listing.token.id),
-      new Account(listing.seller),
-      new Account(listing.app),
-      listing.price,
-      listing.stockSize
-    );
+    return new Listing({
+      token: new ERC1155Token(
+        new Account(listing.token.contract_),
+        listing.token.id
+      ),
+      seller: new Account(listing.seller),
+      app: new Account(listing.app),
+      price: listing.price,
+      stockSize: listing.stockSize,
+    });
   }
 
-  async findPrimaryListing(token: ERC1155Token): Promise<Listing | undefined> {
+  async appEnabled(): Promise<boolean> {
+    return this.contract.isAppEnabled(app.address);
+  }
+
+  async appActive(): Promise<boolean> {
+    return this.contract.isAppActive(app.address);
+  }
+
+  async sellerApproved(seller: Account): Promise<boolean> {
+    return this.contract.isSellerApproved(app.address, seller.address);
+  }
+
+  async findPrimaryListing(token: NFT): Promise<Listing | undefined> {
     const listingId = await this.contract.primaryListingId(
+      app.address,
       token.contract.toString(),
       token.id
     );
@@ -317,28 +325,23 @@ export default class NFTSimpleListing {
     untilBlock: number
   ) {
     await edb.syncEvents(
-      "NFTSimpleListing.List",
+      "MetaStore.List",
       this.contract,
-      this.contract.filters.List(
-        null,
-        null,
-        null,
-        appAddress,
-        null,
-        null,
-        null
-      ),
+      this.contract.filters.List(null, null, appAddress),
       (e: any): List => ({
         transactionHash: e.transactionHash,
         blockNumber: e.blockNumber,
         logIndex: e.logIndex,
 
-        operator: (e.args!.operator as string).toLowerCase(),
         token: { id: (e.args!.token.id as BigNumber)._hex },
         seller: (e.args!.seller as string).toLowerCase(),
-        listingId: (e.args!.listingId as string).toLowerCase(),
-        price: (e.args!.price as BigNumber).toBigInt(),
-        stockSize: (e.args!.stockSize as BigNumber).toBigInt(),
+        listingId: Listing.idHex(
+          new ERC1155Token(
+            new Account(e.args!.token.contract_),
+            e.args!.token.id
+          ),
+          new Account(e.args!.seller as string)
+        ),
       }),
       untilBlock
     );
@@ -350,9 +353,9 @@ export default class NFTSimpleListing {
     untilBlock: number
   ) {
     await edb.syncEvents(
-      "NFTSimpleListing.Replenish",
+      "MetaStore.Replenish",
       this.contract,
-      this.contract.filters.Replenish(null, appAddress, null, null, null, null),
+      this.contract.filters.Replenish(null, appAddress, null, null, null),
       (e: any): Replenish => ({
         transactionHash: e.transactionHash,
         blockNumber: e.blockNumber,
@@ -362,7 +365,6 @@ export default class NFTSimpleListing {
           id: (e.args!.token.id as BigNumber)._hex,
         },
         listingId: (e.args!.listingId as string).toLowerCase(),
-        operator: (e.args!.operator as string).toLowerCase(),
         price: (e.args!.price as BigNumber).toBigInt(),
         amount: (e.args!.amount as BigNumber).toBigInt(),
       }),
@@ -376,9 +378,9 @@ export default class NFTSimpleListing {
     untilBlock: number
   ) {
     await edb.syncEvents(
-      "NFTSimpleListing.Withdraw",
+      "MetaStore.Withdraw",
       this.contract,
-      this.contract.filters.Withdraw(null, appAddress, null, null, null, null),
+      this.contract.filters.Withdraw(null, appAddress, null, null, null),
       (e: any): Withdraw => ({
         transactionHash: e.transactionHash,
         blockNumber: e.blockNumber,
@@ -388,7 +390,6 @@ export default class NFTSimpleListing {
           id: (e.args!.token.id as BigNumber)._hex,
         },
         listingId: (e.args!.listingId as string).toLowerCase(),
-        operator: (e.args!.operator as string).toLowerCase(),
         to: (e.args!.to as string).toLowerCase(),
         amount: (e.args!.amount as BigNumber).toBigInt(),
       }),
@@ -398,7 +399,7 @@ export default class NFTSimpleListing {
 
   private _syncPurchase(edb: EventDB, appAddress: string, untilBlock: number) {
     edb.syncEvents(
-      "NFTSimpleListing.Purchase",
+      "MetaStore.Purchase",
       this.contract,
       this.contract.filters.Purchase(
         null,
@@ -410,6 +411,7 @@ export default class NFTSimpleListing {
         null,
         appAddress,
         null,
+        null,
         null
       ),
       (e: any): Purchase => ({
@@ -420,13 +422,14 @@ export default class NFTSimpleListing {
         token: {
           id: (e.args!.token.id as BigNumber)._hex,
         },
-        listingId: e.args!.listingId._hex,
+        listingId: (e.args!.listingId as string).toLowerCase(),
         buyer: e.args!.buyer.toLowerCase(),
         amount: BigInt(e.args!.amount._hex),
         income: BigInt(e.args!.income._hex),
         royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
         royaltyValue: BigInt(e.args!.royaltyValue._hex),
         appFee: BigInt(e.args!.appFee._hex),
+        baseFee: BigInt(e.args!.baseFee._hex),
         profit: BigInt(e.args!.profit._hex),
       }),
       untilBlock

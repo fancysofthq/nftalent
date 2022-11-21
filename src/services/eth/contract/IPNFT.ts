@@ -1,11 +1,11 @@
-import { BigNumber } from "ethers";
 import { CID } from "multiformats";
 import { hex2Bytes } from "@/util";
 import * as MultihashDigest from "multiformats/hashes/digest";
 import { sha256 } from "multiformats/hashes/sha2";
 import * as dagCbor from "@ipld/dag-cbor";
-import { Token as ERC1155Token } from "./IERC1155";
 import { Token as ERC721Token } from "./IERC721";
+import { Token as ERC1155Token } from "./IERC1155";
+import { BigNumber } from "@ethersproject/bignumber";
 import IPNFT721 from "./IPNFT721";
 import IPNFT1155 from "./IPNFT1155";
 import { Buffer } from "buffer";

@@ -1,0 +1,6 @@
+[submodule "lib/ipnft"]
+	path = lib/ipnft
+	url = ../ipnft
+[submodule "lib/meta"]
+	path = lib/meta
+	url = ../meta

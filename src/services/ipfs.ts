@@ -2,7 +2,7 @@ import { CID } from "multiformats";
 import { ipfsGateway } from "@/store";
 
 /**
- * Return a gateway-ed URL.
+ * Return a gateway-ed URL, or itself if it's not an IPFS URL.
  */
 export function processUri(uri: URL | string): URL {
   if (!(uri instanceof URL)) uri = new URL(uri);
@@ -30,7 +30,7 @@ export function processUri(uri: URL | string): URL {
     }
   }
 
-  throw new Error("Is not IPFS URL: " + uri);
+  return uri;
 }
 
 export function ipnftMetadataUri(cid: CID): URL {

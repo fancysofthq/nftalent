@@ -17,7 +17,6 @@ const { animate = true } = defineProps<Props>();
   background-color: rgb(211, 211, 211);
   z-index: 44;
   overflow: hidden;
-  border-radius: 5px;
 }
 
 .content-placeholder-activity {
