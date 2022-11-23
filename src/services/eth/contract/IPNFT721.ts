@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Ipnft721 as BaseType } from "@/../lib/ipnft/waffle/types/Ipnft721";
 import { abi } from "@/../lib/ipnft/waffle/IPNFT721.json";
 import { ContractTransaction, Signer } from "ethers";
@@ -10,6 +10,7 @@ import { EventDB } from "../event-db";
 import { Transfer } from "./IERC721";
 import * as IPNFT from "./IPNFT";
 import * as Block from "multiformats/block";
+import { AddressZero } from "@ethersproject/constants";
 
 export default class IPNFT721 {
   static readonly account = new Account(import.meta.env.VITE_IPNFT721_ADDRESS);
@@ -84,18 +85,31 @@ export default class IPNFT721 {
   private async _syncTransfer(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "IPNFT721.Transfer",
+      ["IPNFT721.Transfer", "latestFetchedEventBlock", "IPNFT"],
+      untilBlock,
       this._contract,
       this._contract.filters.Transfer(null, null, null),
-      (e: any): Transfer => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
+      (e: ethers.Event): Transfer[] => [
+        {
+          transactionHash: e.transactionHash,
+          blockNumber: e.blockNumber,
+          logIndex: e.logIndex,
 
-        from: (e.args!.from as string).toLowerCase(),
-        to: (e.args!.to as string).toLowerCase(),
-        tokenId: (e.args!.tokenId as BigNumber)._hex,
-      }),
-      untilBlock
+          from: (e.args!.from as string).toLowerCase(),
+          to: (e.args!.to as string).toLowerCase(),
+          tokenId: (e.args!.tokenId as BigNumber)._hex,
+        },
+      ],
+      undefined,
+      async (tx, e: Transfer) => {
+        if (e.from === AddressZero) {
+          await tx.objectStore("IPNFT").put({
+            id: e.tokenId,
+            currentOwner: e.to,
+            ipnft721MintEvent: [e.blockNumber, e.logIndex],
+          });
+        }
+      }
     );
   }
 }

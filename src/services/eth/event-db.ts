@@ -7,6 +7,7 @@ import {
   IndexNames,
   IndexKey,
   IDBPDatabase,
+  IDBPTransaction,
 } from "idb";
 import { Transfer as IERC1155Transfer } from "./contract/IERC1155";
 import { Transfer as IERC721Transfer } from "./contract/IERC721";
@@ -27,6 +28,14 @@ export type {
   Replenish,
   Withdraw,
   Purchase,
+};
+
+export type IPNFT = {
+  id: string;
+  currentOwner: string;
+  ipnft721MintEvent: [number, number]; // IERC721Transfer key
+  ipnft1155IsFinalized?: boolean | null;
+  ipnft1155ExpiredAt?: Date | null;
 };
 
 interface Schema extends DBSchema {
@@ -122,6 +131,14 @@ interface Schema extends DBSchema {
       ["buyer-blockNumber"]: [string, number];
     };
   };
+
+  IPNFT: {
+    key: string;
+    value: IPNFT;
+    indexes: {
+      currentOwner: string;
+    };
+  };
 }
 
 const SYNC_BLOCK_BATCH_SIZE = 10;
@@ -209,6 +226,12 @@ export class EventDB {
         const latestFetchedEventBlock = db.createObjectStore(
           "latestFetchedEventBlock"
         );
+
+        const o1 = db.createObjectStore("IPNFT", {
+          keyPath: "id",
+        });
+
+        o1.createIndex("currentOwner", "currentOwner");
       },
     });
 
@@ -237,16 +260,54 @@ export class EventDB {
     await this.db.put(store, value, key);
   }
 
-  async syncEvents<Store extends StoreNames<Schema>>(
-    store: Store,
+  /**
+   * Synchronize the database with old events from the blockchain,
+   * and subscribe to new events.
+   *
+   * @param eventStore The main event store
+   * @param txStores Object stores referenced by the transaction
+   * @param untilBlock
+   * @param contract
+   * @param filter Event filter
+   * @param rawEventMap Synchrnous function to map raw event to a typed event
+   * @param eventIter Iterate over typed events to get some data to be stored in the transaction.
+   * It may be undefined if there is no any out-of-database interaction needed.
+   * @param txEventIter Iterate over typed events and the data in the same transaction.
+   * Keep in mind that an IndexedDB transaction would commit as soon as it has nothing to do.
+   */
+  async syncEvents<
+    EventStore extends StoreNames<Schema>,
+    EventIterReturnT = unknown,
+    TxStores extends StoreNames<Schema>[] = [
+      EventStore,
+      "latestFetchedEventBlock"
+    ]
+  >(
+    eventStore: EventStore,
+    txStores: TxStores,
+    untilBlock: number,
     contract: ethers.Contract,
     filter: ethers.EventFilter,
-    mapping: (
-      e: any
-    ) => StoreValue<Schema, Store> | StoreValue<Schema, Store>[],
-    untilBlock: number
+    rawEventMap: (e: ethers.Event) => StoreValue<Schema, EventStore>[],
+    eventIter?: (
+      e: StoreValue<Schema, EventStore>
+    ) => Promise<EventIterReturnT>,
+    txEventIter?: (
+      tx: IDBPTransaction<Schema, TxStores, "readwrite">,
+      e: StoreValue<Schema, EventStore>,
+      i: EventIterReturnT | undefined
+    ) => Promise<void>
   ) {
-    await this._syncPastEvents(store, contract, filter, mapping, untilBlock);
+    await this._syncPastEvents(
+      eventStore,
+      txStores,
+      untilBlock,
+      contract,
+      filter,
+      rawEventMap,
+      eventIter,
+      txEventIter
+    );
 
     contract.on(filter, async (...data) => {
       const e = data[data.length - 1];
@@ -254,12 +315,43 @@ export class EventDB {
       // We've already synchronized this event.
       if (e.blockNumber <= untilBlock) return;
 
-      const mapped = mapping(e);
+      const mappedEvents = rawEventMap(e);
 
-      if (mapped instanceof Array) await this.putBatch(store, mapped);
-      else await this.put(store, mapped);
+      if (mappedEvents.length > 0) {
+        const iterResults = await Promise.all(
+          mappedEvents.map((e) => eventIter?.(e))
+        );
 
-      await this.put("latestFetchedEventBlock", e.blockNumber, store);
+        const tx = this.db.transaction(txStores, "readwrite");
+        let latestFetchedBlock =
+          (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
+          parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
+          0;
+
+        if (latestFetchedBlock <= e.blockNumber) {
+          try {
+            for (let i = 0; i < mappedEvents.length; i++) {
+              try {
+                await tx.objectStore(eventStore).add(mappedEvents[i]);
+                if (txEventIter)
+                  await txEventIter(tx, mappedEvents[i], iterResults[i]);
+              } catch (e) {
+                console.error("Already added", mappedEvents[i]);
+              }
+            }
+
+            await tx
+              .objectStore("latestFetchedEventBlock")
+              .put(e.blockNumber, eventStore);
+
+            tx.commit();
+          } catch (e) {
+            console.error("Tx failed", e);
+          }
+        } else {
+          console.debug("Skipping event", e);
+        }
+      }
     });
   }
 
@@ -313,19 +405,33 @@ export class EventDB {
   /**
    * Synchronize past events.
    *
-   * @param eventCallback must be synchronous
+   * @tparam TxStores object stores covered by the transaction.
+   *
+   * @param rawEventMap must be synchronous
    * @param finalBlock the block to sync until (including)
    */
-  private async _syncPastEvents<Store extends StoreNames<Schema>>(
-    eventStore: Store,
+  private async _syncPastEvents<
+    EventStore extends StoreNames<Schema>,
+    EventIterReturnT = unknown,
+    TxStores extends StoreNames<Schema>[] = [
+      EventStore,
+      "latestFetchedEventBlock"
+    ]
+  >(
+    eventStore: EventStore,
+    txStores: TxStores,
+    finalBlock: number,
     contract: ethers.Contract,
     filter: ethers.EventFilter,
-    eventCallback: (
-      value: ethers.Event,
-      index: number,
-      array: ethers.Event[]
-    ) => StoreValue<Schema, Store> | StoreValue<Schema, Store>[],
-    finalBlock: number
+    rawEventMap: (e: ethers.Event) => StoreValue<Schema, EventStore>[],
+    eventIter?: (
+      e: StoreValue<Schema, EventStore>
+    ) => Promise<EventIterReturnT>,
+    txEventIter?: (
+      tx: IDBPTransaction<Schema, TxStores, "readwrite">,
+      e: StoreValue<Schema, EventStore>,
+      i: EventIterReturnT | undefined
+    ) => Promise<void>
   ) {
     let fromBlock =
       (await this.db.get("latestFetchedEventBlock", eventStore)) ||
@@ -334,13 +440,37 @@ export class EventDB {
 
     while (fromBlock < finalBlock) {
       const toBlock = Math.min(finalBlock, fromBlock + SYNC_BLOCK_BATCH_SIZE);
-
       const rawEvents = await contract.queryFilter(filter, fromBlock, toBlock);
-      const mappedEvents = rawEvents.flatMap(eventCallback);
 
-      if (mappedEvents.length > 0)
-        await this.putBatch(eventStore, mappedEvents);
-      await this.db.put("latestFetchedEventBlock", toBlock, eventStore);
+      if (rawEvents.length > 0) {
+        const mappedEvents = rawEvents.flatMap(rawEventMap);
+        const iterResults = await Promise.all(
+          mappedEvents.map((e) => eventIter?.(e))
+        );
+
+        const tx = this.db.transaction(txStores, "readwrite");
+        let latestBlock =
+          (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
+          parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
+          0;
+
+        if (latestBlock <= fromBlock) {
+          if (mappedEvents.length > 0) {
+            for (let i = 0; i < mappedEvents.length; i++) {
+              await tx.objectStore(eventStore).put(mappedEvents[i]);
+
+              if (txEventIter)
+                await txEventIter(tx, mappedEvents[i], iterResults[i]);
+            }
+          }
+
+          await tx
+            .objectStore("latestFetchedEventBlock")
+            .put(toBlock, eventStore);
+
+          tx.commit();
+        }
+      }
 
       fromBlock = toBlock + 1;
     }

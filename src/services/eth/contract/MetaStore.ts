@@ -15,7 +15,6 @@ import { EventDB } from "../event-db";
 import { app } from "../../eth";
 import { EventBase } from "./common";
 import { type NFT } from "./NFT";
-import IPNFT721 from "./IPNFT721";
 import IPNFT1155 from "./IPNFT1155";
 
 export class ListingConfig {
@@ -326,24 +325,27 @@ export default class MetaStore {
   ) {
     await edb.syncEvents(
       "MetaStore.List",
+      ["MetaStore.List", "latestFetchedEventBlock"],
+      untilBlock,
       this.contract,
       this.contract.filters.List(null, null, appAddress),
-      (e: any): List => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
+      (e: ethers.Event): List[] => [
+        {
+          transactionHash: e.transactionHash,
+          blockNumber: e.blockNumber,
+          logIndex: e.logIndex,
 
-        token: { id: (e.args!.token.id as BigNumber)._hex },
-        seller: (e.args!.seller as string).toLowerCase(),
-        listingId: Listing.idHex(
-          new ERC1155Token(
-            new Account(e.args!.token.contract_),
-            e.args!.token.id
+          token: { id: (e.args!.token.id as BigNumber)._hex },
+          seller: (e.args!.seller as string).toLowerCase(),
+          listingId: Listing.idHex(
+            new ERC1155Token(
+              new Account(e.args!.token.contract_),
+              e.args!.token.id
+            ),
+            new Account(e.args!.seller as string)
           ),
-          new Account(e.args!.seller as string)
-        ),
-      }),
-      untilBlock
+        },
+      ]
     );
   }
 
@@ -354,21 +356,24 @@ export default class MetaStore {
   ) {
     await edb.syncEvents(
       "MetaStore.Replenish",
+      ["MetaStore.Replenish", "latestFetchedEventBlock"],
+      untilBlock,
       this.contract,
       this.contract.filters.Replenish(null, appAddress, null, null, null),
-      (e: any): Replenish => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
+      (e: ethers.Event): Replenish[] => [
+        {
+          transactionHash: e.transactionHash,
+          blockNumber: e.blockNumber,
+          logIndex: e.logIndex,
 
-        token: {
-          id: (e.args!.token.id as BigNumber)._hex,
+          token: {
+            id: (e.args!.token.id as BigNumber)._hex,
+          },
+          listingId: (e.args!.listingId as string).toLowerCase(),
+          price: (e.args!.price as BigNumber).toBigInt(),
+          amount: (e.args!.amount as BigNumber).toBigInt(),
         },
-        listingId: (e.args!.listingId as string).toLowerCase(),
-        price: (e.args!.price as BigNumber).toBigInt(),
-        amount: (e.args!.amount as BigNumber).toBigInt(),
-      }),
-      untilBlock
+      ]
     );
   }
 
@@ -379,27 +384,32 @@ export default class MetaStore {
   ) {
     await edb.syncEvents(
       "MetaStore.Withdraw",
+      ["MetaStore.Withdraw", "latestFetchedEventBlock"],
+      untilBlock,
       this.contract,
       this.contract.filters.Withdraw(null, appAddress, null, null, null),
-      (e: any): Withdraw => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
+      (e: ethers.Event): Withdraw[] => [
+        {
+          transactionHash: e.transactionHash,
+          blockNumber: e.blockNumber,
+          logIndex: e.logIndex,
 
-        token: {
-          id: (e.args!.token.id as BigNumber)._hex,
+          token: {
+            id: (e.args!.token.id as BigNumber)._hex,
+          },
+          listingId: (e.args!.listingId as string).toLowerCase(),
+          to: (e.args!.to as string).toLowerCase(),
+          amount: (e.args!.amount as BigNumber).toBigInt(),
         },
-        listingId: (e.args!.listingId as string).toLowerCase(),
-        to: (e.args!.to as string).toLowerCase(),
-        amount: (e.args!.amount as BigNumber).toBigInt(),
-      }),
-      untilBlock
+      ]
     );
   }
 
   private _syncPurchase(edb: EventDB, appAddress: string, untilBlock: number) {
     edb.syncEvents(
       "MetaStore.Purchase",
+      ["MetaStore.Purchase", "latestFetchedEventBlock"],
+      untilBlock,
       this.contract,
       this.contract.filters.Purchase(
         null,
@@ -414,25 +424,26 @@ export default class MetaStore {
         null,
         null
       ),
-      (e: any): Purchase => ({
-        transactionHash: e.transactionHash,
-        blockNumber: e.blockNumber,
-        logIndex: e.logIndex,
+      (e: ethers.Event): Purchase[] => [
+        {
+          transactionHash: e.transactionHash,
+          blockNumber: e.blockNumber,
+          logIndex: e.logIndex,
 
-        token: {
-          id: (e.args!.token.id as BigNumber)._hex,
+          token: {
+            id: (e.args!.token.id as BigNumber)._hex,
+          },
+          listingId: (e.args!.listingId as string).toLowerCase(),
+          buyer: e.args!.buyer.toLowerCase(),
+          amount: BigInt(e.args!.amount._hex),
+          income: BigInt(e.args!.income._hex),
+          royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
+          royaltyValue: BigInt(e.args!.royaltyValue._hex),
+          appFee: BigInt(e.args!.appFee._hex),
+          baseFee: BigInt(e.args!.baseFee._hex),
+          profit: BigInt(e.args!.profit._hex),
         },
-        listingId: (e.args!.listingId as string).toLowerCase(),
-        buyer: e.args!.buyer.toLowerCase(),
-        amount: BigInt(e.args!.amount._hex),
-        income: BigInt(e.args!.income._hex),
-        royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
-        royaltyValue: BigInt(e.args!.royaltyValue._hex),
-        appFee: BigInt(e.args!.appFee._hex),
-        baseFee: BigInt(e.args!.baseFee._hex),
-        profit: BigInt(e.args!.profit._hex),
-      }),
-      untilBlock
+      ]
     );
   }
 }
