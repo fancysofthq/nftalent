@@ -1,5 +1,5 @@
 <script lang="ts">
-export type FileWithUrl = File & { url?: string };
+export type FileWithUrl = File & { url?: URL };
 </script>
 
 <script setup lang="ts">
@@ -13,7 +13,7 @@ const emit = defineEmits(["update:file"]);
 
 function updateFile(file: FileWithUrl | undefined) {
   if (file) {
-    file.url = URL.createObjectURL(file);
+    file.url = new URL(URL.createObjectURL(file));
   }
 
   console.debug("Emitting file update", file);
@@ -35,7 +35,10 @@ label.label.h-full.w-full.flex.flex-col.justify-center.items-center(
   @drop.prevent="onFileDrop"
   :class="{ 'cursor-pointer': !disabled, 'cursor-not-allowed': disabled }"
 )
-  img.h-full.w-full.object-cover.rounded(v-if="file" :src="file.url")
+  img.h-full.w-full.object-cover.rounded(
+    v-if="file"
+    :src="file.url?.toString()"
+  )
   .flex.flex-col.items-center(v-else)
     span.text-2xl 🖼
     span.text-sm.font-medium Select image

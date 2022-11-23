@@ -1,12 +1,14 @@
+import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
 import { BigNumber } from "ethers";
 import Account from "../Account";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
 
 export type Metadata = {
+  $schema: string;
   name: string;
   description: string;
-  image: string;
+  image: string | URL | FileWithUrl;
   properties: any;
 };
 

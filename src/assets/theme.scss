@@ -67,3 +67,7 @@
 .daisy-step {
   min-height: 2.5rem !important;
 }
+
+.daisy-tab {
+  @apply flex-grow;
+}

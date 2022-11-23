@@ -7,6 +7,7 @@ import Token from "./views/Token.vue";
 import Account from "./services/eth/Account";
 import { CID } from "multiformats";
 import { base32 } from "multiformats/bases/base32";
+import { getOrCreate as getOrCreateIPNFT } from "./models/IPNFT";
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -19,7 +20,7 @@ export default createRouter({
       component: Token,
       meta: { name: "Token" },
       props: (route) => ({
-        cid: CID.parse(route.params.cid as string, base32),
+        ipnft: getOrCreateIPNFT(CID.parse(route.params.cid as string, base32)),
       }),
     },
     {

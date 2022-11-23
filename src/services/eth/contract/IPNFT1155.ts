@@ -31,7 +31,7 @@ export default class IPNFT1155 {
     token: IPNFT.Token,
     amount: BigNumberish,
     finalize: boolean,
-    expiresAt: Date,
+    expiredAt: Date | undefined,
     data: BytesLike
   ) {
     return await this._contract.mint(
@@ -39,7 +39,7 @@ export default class IPNFT1155 {
       token.id,
       amount,
       finalize,
-      Math.round(expiresAt.valueOf() / 1000),
+      expiredAt ? Math.round(expiredAt.valueOf() / 1000) : 0,
       data
     );
   }

@@ -3,25 +3,28 @@ export enum Kind {
   Full,
   Card,
   FeedEntry,
+  Thumbnail,
 }
 </script>
 
 <script setup lang="ts">
 import * as eth from "@/services/eth";
-import { computed, onMounted } from "vue";
+import { computed, type ComputedRef, onMounted } from "vue";
 import Placeholder from "@/components/shared/Placeholder.vue";
-import IPNFT from "@/models/IPNFT";
+import IPNFTModel from "@/models/IPNFT";
 import Markdown from "vue3-markdown-it";
 import Chip from "@/components/shared/Chip.vue";
 import { formatDistance } from "date-fns";
 import * as IPFS from "@/services/ipfs";
+import * as nftalent from "@/nftalent";
+import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
 
 const {
   token,
   kind = Kind.Full,
   animatePlaceholder = true,
 } = defineProps<{
-  token: IPNFT;
+  token: IPNFTModel;
   kind?: Kind;
   animatePlaceholder?: boolean;
 }>();
@@ -43,12 +46,19 @@ eth.onConnect(() => {
 
 const rootClass = computed(() => {
   switch (kind) {
-    case Kind.Full:
-      return "grid grid-cols-1 sm_grid-cols-3";
+    case Kind.Full: {
+      if (token.metadata?.$schema == "nftalent/collectible/image?v=1") {
+        return "grid grid-cols-1";
+      } else {
+        return "grid grid-cols-1 sm_grid-cols-3";
+      }
+    }
     case Kind.Card:
       return "grid grid-cols-1";
     case Kind.FeedEntry:
       return "grid grid-cols-10";
+    case Kind.Thumbnail:
+      return "grid grid-cols-1";
   }
 });
 
@@ -62,25 +72,75 @@ const infoClass = computed(() => {
       return "col-span-8 justify-center";
   }
 });
+
+function urlFromImage(image: string | URL | FileWithUrl): URL {
+  if (image instanceof URL) {
+    return IPFS.processUri(image);
+  } else if (typeof image == "string") {
+    return IPFS.processUri(new URL(image));
+  } else {
+    console.debug("Image is a File", image.url?.toString());
+    return image.url!;
+  }
+}
+
+const imageUrl: ComputedRef<URL | undefined> = computed(() => {
+  if (!token.metadata) return undefined;
+
+  if (token.metadata.$schema == "nftalent/collectible/image?v=1") {
+    const metadata = token.metadata as nftalent.Collectible.Image.Metadata;
+
+    switch (kind) {
+      // For Full kind, return the override image
+      // if it exists, otherwise the preview image.
+      case Kind.Full: {
+        if (metadata.properties.image && metadata.properties.image.uri) {
+          return urlFromImage(metadata.properties.image.uri);
+        } else if (metadata.image) {
+          return urlFromImage(metadata.image);
+        }
+
+        break;
+      }
+
+      // For other kinds, return the preview image
+      case Kind.Card:
+      case Kind.FeedEntry:
+      case Kind.Thumbnail: {
+        if (metadata.image) {
+          return urlFromImage(metadata.image);
+        }
+      }
+    }
+  } else if (token.metadata?.image) {
+    return urlFromImage(token.metadata.image);
+  }
+});
 </script>
 
 <template lang="pug">
-.h-full(:class="rootClass" style="grid-template-rows: min-content auto")
+.h-full.rounded-lg(
+  :class="rootClass"
+  style="grid-template-rows: min-content auto"
+)
   // Image
   router-link.contents(tabindex="-1" :to="'/' + token.token.cid.toString()")
-    .aspect-square.object-contain.w-full.h-full.bg-cover.bg-center(
-      v-if="token.metadata && token.metadata.image"
-      :style="'background-image: url(' + IPFS.processUri(token.metadata.image).toString() + ');'"
+    .rounded-lg.aspect-square.object-contain.w-full.h-full.bg-cover.bg-center(
+      v-if="imageUrl"
+      :style="'background-image: url(' + imageUrl.toString() + ');'"
     )
-      img.aspect-square.object-contain.w-full.h-full.backdrop-blur.backdrop-brightness-75(
-        :src="IPFS.processUri(token.metadata.image).toString()"
+      img.rounded-lg.aspect-square.object-contain.w-full.h-full.backdrop-blur.backdrop-brightness-75(
+        :src="imageUrl.toString()"
       )
     Placeholder.w-full.aspect-square.object-cover(
       v-else
       :animate="animatePlaceholder"
     )
 
-  .flex.flex-col.gap-2.p-3.h-full(:class="infoClass")
+  .flex.flex-col.gap-2.p-3.h-full(
+    :class="infoClass"
+    v-if="kind != Kind.Thumbnail"
+  )
     .flex.flex-col.gap-2(
       :class="{ 'justify-between h-full': kind === Kind.Card }"
     )

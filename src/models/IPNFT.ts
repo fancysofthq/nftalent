@@ -1,6 +1,5 @@
 import Account from "@/services/eth/Account";
 import { type Metadata as ERC1155Metadata } from "@/services/eth/contract/IERC1155";
-import { Listing } from "@/services/eth/contract/MetaStore";
 import { BigNumber } from "ethers";
 import * as ipfs from "@/services/ipfs";
 import axios from "axios";
@@ -17,122 +16,180 @@ import { markRaw, Ref, ref } from "vue";
 export default class IPNFT {
   readonly token: IPNFTEth.Token;
 
-  private _metadata: Ref<ERC1155Metadata | undefined>;
-  private _ipnft721: Ref<AuxIPNFT721 | undefined>;
-  private _ipnft1155: Ref<AuxIPNFT1155 | undefined>;
-  private _metaStore: Ref<AuxMetaStore | undefined>;
+  private readonly _metadata: Ref<ERC1155Metadata | undefined> = ref();
+
+  private readonly _ipnft721Minter: Ref<Account | undefined> = ref();
+  private readonly _ipnft721MintedAt: Ref<Date | undefined> = ref();
+  private readonly _ipnft721Royalty: Ref<number | undefined> = ref();
+
+  private readonly _ipnft1155Balance: Ref<BigNumber | undefined> = ref();
+  private readonly _ipnft1155TotalSupply: Ref<BigNumber | undefined> = ref();
+  private readonly _ipnft1155Finalized: Ref<boolean | null | undefined> = ref();
+  private readonly _ipnft1155ExpiredAt: Ref<Date | null | undefined> = ref();
 
   private _metadataPromise?: Promise<ERC1155Metadata>;
-  private _ipnft721Promise?: Promise<AuxIPNFT721>;
-  private _ipnft1155Promise?: Promise<AuxIPNFT1155>;
-  private _metaStorePromise?: Promise<AuxMetaStore>;
+  private _ipnft721MinterPromise?: Promise<Account>;
+  private _ipnft721MintedAtPromise?: Promise<Date | undefined>;
+  private _ipnft721RoyaltyPromise?: Promise<number>;
+  private _ipnft1155BalancePromise?: Promise<BigNumber>;
+  private _ipnft1155TotalSupplyPromise?: Promise<BigNumber>;
+  private _ipnft1155FinalizedPromise?: Promise<boolean | null>;
+  private _ipnft1155ExpiredAtPromise?: Promise<Date | null>;
 
   constructor(
     token: IPNFTEth.Token,
     {
       metadata,
-      ipnft,
-      ipnft1155,
-      metaStore,
+      ipnft721Minter,
+      ipnft721MintedAt,
+      ipnft721Royalty,
+      ipnft1155Balance,
+      ipnft1155TotalSupply,
+      ipnft1155Finalized,
+      ipnft1155ExpiredAt,
     }: {
       metadata: Ref<ERC1155Metadata | undefined>;
-      ipnft: Ref<AuxIPNFT721 | undefined>;
-      ipnft1155: Ref<AuxIPNFT1155 | undefined>;
-      metaStore: Ref<AuxMetaStore | undefined>;
+      ipnft721Minter: Ref<Account | undefined>;
+      ipnft721MintedAt: Ref<Date | undefined>;
+      ipnft721Royalty: Ref<number | undefined>;
+      ipnft1155Balance: Ref<BigNumber | undefined>;
+      ipnft1155TotalSupply: Ref<BigNumber | undefined>;
+      ipnft1155Finalized: Ref<boolean | null | undefined>;
+      ipnft1155ExpiredAt: Ref<Date | null | undefined>;
     } = {
       metadata: ref(),
-      ipnft: ref(),
-      ipnft1155: ref(),
-      metaStore: ref(),
+      ipnft721Minter: ref(),
+      ipnft721MintedAt: ref(),
+      ipnft721Royalty: ref(),
+      ipnft1155Balance: ref(),
+      ipnft1155TotalSupply: ref(),
+      ipnft1155Finalized: ref(),
+      ipnft1155ExpiredAt: ref(),
     }
   ) {
     this.token = token;
     this._metadata = metadata;
-    this._ipnft721 = ipnft;
-    this._ipnft1155 = ipnft1155;
-    this._metaStore = metaStore;
-  }
-
-  async fetchIPFSMetadata(): Promise<void> {
-    const uri = ipfs
-      .processUri(ipfs.ipnftMetadataUri(IPNFTEth.uint256ToCID(this.token.id)))
-      .toString();
-    this._metadata.value ||= await (this._metadataPromise ||= (
-      await axios.get(uri)
-    ).data);
-  }
-
-  async fetchEthMetadata() {
-    await Promise.all([
-      this._fetchIPNFT721(),
-      this._fetchIPNFT1155(),
-      this._fetchMetaStore(),
-    ]);
+    this._ipnft721Minter = ipnft721Minter;
+    this._ipnft721MintedAt = ipnft721MintedAt;
+    this._ipnft721Royalty = ipnft721Royalty;
+    this._ipnft1155Balance = ipnft1155Balance;
+    this._ipnft1155TotalSupply = ipnft1155TotalSupply;
+    this._ipnft1155Finalized = ipnft1155Finalized;
+    this._ipnft1155ExpiredAt = ipnft1155ExpiredAt;
   }
 
   get metadata(): ERC1155Metadata | undefined {
     return this._metadata.value;
   }
 
+  set metadata(value: ERC1155Metadata | undefined) {
+    this._metadata.value = value;
+  }
+
   get ipnft721Minter(): Account | undefined {
-    return this._ipnft721.value?.minter;
+    return this._ipnft721Minter.value;
+  }
+
+  set ipnft721Minter(value: Account | undefined) {
+    this._ipnft721Minter.value = value;
   }
 
   get ipnft721MintedAt(): Date | undefined {
-    return this._ipnft721.value?.mintedAt;
+    return this._ipnft721MintedAt.value;
+  }
+
+  set ipnft721MintedAt(value: Date | undefined) {
+    this._ipnft721MintedAt.value = value;
   }
 
   get ipnft721Royalty(): number | undefined {
-    return this._ipnft721.value?.royalty;
+    return this._ipnft721Royalty.value;
+  }
+
+  set ipnft721Royalty(value: number | undefined) {
+    this._ipnft721Royalty.value = value;
   }
 
   get ipnft1155Balance(): BigNumber | undefined {
-    return this._ipnft1155.value?.balance;
+    return this._ipnft1155Balance.value;
+  }
+
+  set ipnft1155Balance(value: BigNumber | undefined) {
+    this._ipnft1155Balance.value = value;
   }
 
   get ipnft1155TotalSupply(): BigNumber | undefined {
-    return this._ipnft1155.value?.totalSupply;
+    return this._ipnft1155TotalSupply.value;
   }
 
-  get ipnft1155Finalized(): boolean | undefined {
-    return this._ipnft1155.value?.finalized;
+  set ipnft1155TotalSupply(value: BigNumber | undefined) {
+    this._ipnft1155TotalSupply.value = value;
   }
 
-  get ipnft1155ExpiredAt(): Date | undefined {
-    return this._ipnft1155.value?.expiredAt;
+  get ipnft1155Finalized(): boolean | null | undefined {
+    return this._ipnft1155Finalized.value;
+  }
+
+  set ipnft1155Finalized(value: boolean | null | undefined) {
+    this._ipnft1155Finalized.value = value;
+  }
+
+  get ipnft1155ExpiredAt(): Date | null | undefined {
+    return this._ipnft1155ExpiredAt.value;
+  }
+
+  set ipnft1155ExpiredAt(value: Date | null | undefined) {
+    this._ipnft1155ExpiredAt.value = value;
+  }
+
+  async fetchIPFSMetadata(): Promise<void> {
+    const uri = ipfs
+      .processUri(ipfs.ipnftMetadataUri(IPNFTEth.uint256ToCID(this.token.id)))
+      .toString();
+
+    this._metadata.value ||= await (this._metadataPromise ||= (
+      await axios.get(uri)
+    ).data);
+  }
+
+  async fetchEthMetadata() {
+    await Promise.all([this._fetchIPNFT721(), this._fetchIPNFT1155()]);
   }
 
   private async _fetchIPNFT721(): Promise<void> {
-    this._ipnft721.value ||= await (this._ipnft721Promise ||= (async () => ({
-      minter: await eth.ipnft721.ownerOf(this.token),
-      mintedAt: await ipnft721MintedAtBlock(this.token).then((bn) => {
-        if (bn) {
-          return eth.provider
-            .value!.getBlock(bn)
-            .then((b) => new Date(b.timestamp * 1000));
-        }
-      }),
-      royalty: await eth.ipnft721.royaltyNumber(this.token),
-    }))());
+    this._ipnft721Minter.value ||= await (this._ipnft721MinterPromise ||=
+      (async () => await eth.ipnft721.ownerOf(this.token))());
+
+    this._ipnft721MintedAt.value ||= await (this._ipnft721MintedAtPromise ||=
+      (async () =>
+        await ipnft721MintedAtBlock(this.token).then((bn) => {
+          if (bn) {
+            return eth.provider
+              .value!.getBlock(bn)
+              .then((b) => new Date(b.timestamp * 1000));
+          }
+        }))());
+
+    this._ipnft721Royalty.value ||= await (this._ipnft721RoyaltyPromise ||=
+      (async () => await eth.ipnft721.royaltyNumber(this.token))());
   }
 
   private async _fetchIPNFT1155(): Promise<void> {
-    this._ipnft1155.value ||= await (this._ipnft1155Promise ||= (async () => ({
-      balance: await eth.ipnft1155.balanceOf(eth.account.value!, this.token),
-      totalSupply: await eth.ipnft1155.totalSupply(this.token),
-      finalized: await eth.ipnft1155.finalized(this.token),
-      expiredAt: await eth.ipnft1155.expiredAt(this.token),
-    }))());
-  }
+    this._ipnft1155Balance.value ||= await (this._ipnft1155BalancePromise ||=
+      (async () =>
+        await eth.ipnft1155.balanceOf(eth.account.value!, this.token))());
 
-  private async _fetchMetaStore(): Promise<void> {
-    // TODO: Fetch all listings, signal the primary one?
-    // this._metaStore.value ||= await (this._metaStorePromise ||= (async () => ({
-    //   primaryListing: await eth.metaStore.findPrimaryListing({
-    //     contract: IPNFT1155.account,
-    //     id: this.token.id,
-    //   }),
-    // }))());
+    this._ipnft1155TotalSupply.value ||=
+      await (this._ipnft1155TotalSupplyPromise ||= (async () =>
+        await eth.ipnft1155.totalSupply(this.token))());
+
+    this._ipnft1155Finalized.value ||=
+      await (this._ipnft1155FinalizedPromise ||= (async () =>
+        await eth.ipnft1155.isFinalized(this.token))());
+
+    this._ipnft1155ExpiredAt.value ||=
+      await (this._ipnft1155ExpiredAtPromise ||= (async () =>
+        await eth.ipnft1155.expiredAt(this.token))());
   }
 }
 
@@ -148,23 +205,6 @@ export function getOrCreate(cid: CID): IPNFT {
   memoized.set(cid, token);
   return token;
 }
-
-type AuxIPNFT721 = {
-  minter: Account;
-  mintedAt?: Date;
-  royalty: number;
-};
-
-type AuxIPNFT1155 = {
-  balance: BigNumber;
-  totalSupply: BigNumber;
-  expiredAt?: Date;
-  finalized: boolean;
-};
-
-type AuxMetaStore = {
-  primaryListing?: Listing;
-};
 
 async function ipnft721MintedAtBlock(
   token: IPNFTEth.Token

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import * as eth from "@/services/eth";
 import { onMounted, type Ref, ref, type ShallowRef, markRaw } from "vue";
-import { CID } from "multiformats";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import IPNFTModel from "@/models/IPNFT";
 import History from "./Token/History.vue";
-import Redeemable from "@/components/Token.vue";
+import Token from "@/components/Token.vue";
 import edb from "@/services/eth/event-db";
 import Listing from "@/models/Listing";
 import { Listing as RawListing } from "@/services/eth/contract/MetaStore";
@@ -13,19 +12,18 @@ import TokenListing from "@/components/TokenListing.vue";
 import Purchase from "@/components/modals/Purchase.vue";
 import Redeem from "@/components/modals/Redeem.vue";
 
-const props = defineProps<{ cid: CID }>();
-const ipnft = new IPNFTModel(new IPNFT.Token(props.cid));
+const props = defineProps<{ ipnft: IPNFTModel }>();
 const listings: ShallowRef<Listing[]> = ref([]);
 const purchaseListing: Ref<Listing | undefined> = ref();
 const redeemModal = ref(false);
 
 onMounted(() => {
-  ipnft.fetchIPFSMetadata();
+  props.ipnft.fetchIPFSMetadata();
 
   edb.iterateEventsIndex(
     "MetaStore.List",
     "tokenId",
-    IPNFT.cidToUint256(props.cid)._hex,
+    IPNFT.cidToUint256(props.ipnft.token.cid)._hex,
     "next",
     (event) => {
       const listing = markRaw(new Listing(RawListing.fromDBEvent(event)));
@@ -35,7 +33,7 @@ onMounted(() => {
   );
 });
 
-eth.onConnect(() => ipnft.fetchEthMetadata());
+eth.onConnect(() => props.ipnft.fetchEthMetadata());
 </script>
 
 <template lang="pug">
@@ -43,18 +41,19 @@ eth.onConnect(() => ipnft.fetchEthMetadata());
   .w-full.max-w-3xl.flex.flex-col.gap-2
     h2.font-bold.text-lg 
       span.inline-block.select-none Token 💎
-      span.text-gray-500.text-sm.ml-2 {{ cid }}
-    Redeemable.border.rounded-lg(
+      span.text-gray-500.text-sm.ml-2 {{ props.ipnft.token.cid }}
+    Token.border.rounded-lg(
       :token="ipnft"
       :showRedeemButton="true"
       @redeem="redeemModal = true"
     )
-      button.daisy-btn.daisy-btn-primary.mt-1(
-        :disabled="!ipnft.ipnft1155Balance || ipnft.ipnft1155Balance.eq(0)"
-        @click="redeemModal = true"
-      )
-        span.text-xl 🎟
-        span Redeem (you have {{ ipnft.ipnft1155Balance }})
+      template(v-if="ipnft.ipnft1155ExpiredAt")
+        button.daisy-btn.daisy-btn-primary.mt-1(
+          :disabled="!ipnft.ipnft1155Balance || ipnft.ipnft1155Balance.eq(0)"
+          @click="redeemModal = true"
+        )
+          span.text-xl 🎟
+          span Redeem (you have {{ ipnft.ipnft1155Balance }})
 
     h2.font-bold.text-lg Listings ({{ listings.length }}) 📦
     table.daisy-table.rounded-lg.border

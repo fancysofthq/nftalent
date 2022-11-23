@@ -8,7 +8,7 @@ import Placeholder from "@/components/shared/Placeholder.vue";
 import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./Feed.vue";
 import { formatDistance } from "date-fns";
-import Redeemable, { Kind as RedeemableKind } from "@/components/Token.vue";
+import Token, { Kind as TokenKind } from "@/components/Token.vue";
 
 const props = defineProps<{ event: EventWrapper; token: IPNFT }>();
 const timestamp: Ref<Date | undefined> = ref();
@@ -75,10 +75,10 @@ const eventActor = computed(() => {
     Placeholder.inline-block.h-5.w-12(v-else)
 
   .border.rounded(v-if="event.isList" style="grid-template-columns: 4rem auto")
-    Redeemable(:token="token" :kind="RedeemableKind.Full")
+    Token(:token="token" :kind="TokenKind.Full")
 
   .border.rounded(v-else)
-    Redeemable(:token="token" :kind="RedeemableKind.FeedEntry")
+    Token(:token="token" :kind="TokenKind.FeedEntry")
 </template>
 
 <style scoped lang="scss"></style>

@@ -12,10 +12,10 @@ import Spinner, { Kind as SpinnerKind } from "@/components/shared/Spinner.vue";
 import { Uint8 } from "@/util";
 import { CID } from "multiformats/cid";
 import { web3StorageApiKey } from "@/store";
-import MetaStore, { Listing } from "@/services/eth/contract/MetaStore";
+import MetaStore from "@/services/eth/contract/MetaStore";
 import IPNFTModel from "@/models/IPNFT";
 import { addMonths } from "date-fns/fp";
-import Redeemable from "@/components/Token.vue";
+import Token, { Kind as TokenKind } from "@/components/Token.vue";
 
 const now = new Date();
 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -29,7 +29,15 @@ const editions: Ref<number> = ref(0);
 const royalty: Ref<number> = ref(10);
 const isSellerApproved = ref(false);
 
-const isRedeemable = ref(true);
+enum Tab {
+  CollectibeImage,
+  Redeemable,
+}
+
+const tab = ref(Tab.CollectibeImage);
+
+const imageOverride: Ref<FileWithUrl | undefined> = ref();
+
 const redeemableExpiredAt: Ref<Date | undefined> = ref(addMonths(1)(today));
 const redeemableUnit: Ref<string | undefined> = ref();
 
@@ -51,9 +59,9 @@ function stageName(stage: MintStage): string {
     case MintStage.UploadToIPFS:
       return "Upload to IPFS";
     case MintStage.MintIPNFT721:
-      return "Mint IPNFT721 (copyright)";
+      return "Mint IPNFT721";
     case MintStage.MintIPNFT1155:
-      return "Mint IPNFT1155 (redeemable)";
+      return "Mint IPNFT1155";
     case MintStage.Done:
       return "Done!";
   }
@@ -87,88 +95,89 @@ const isCurrentlyMintable = computed(() => {
     description.value.length > 0 &&
     price.value.gt(0) &&
     editions.value > 0 &&
-    (!isRedeemable.value ||
-      (redeemableUnit.value &&
-        redeemableUnit.value.length > 0 &&
-        redeemableExpiredAt.value &&
-        redeemableExpiredAt.value > now))
+    ((tab.value == Tab.Redeemable &&
+      redeemableUnit.value &&
+      redeemableUnit.value.length > 0 &&
+      redeemableExpiredAt.value &&
+      redeemableExpiredAt.value > now) ||
+      tab.value == Tab.CollectibeImage)
   );
 });
 
-const token = computed(
-  () =>
-    new IPNFT.Token(
-      cid.value || CID.parse("QmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4")
-    )
-);
+const metadata: ComputedRef<
+  nftalent.Collectible.Image.Metadata | nftalent.Redeemable.Metadata
+> = computed(() => {
+  switch (tab.value) {
+    case Tab.CollectibeImage:
+      return {
+        $schema: "nftalent/collectible/image?v=1",
+        name: name.value!,
+        description: description.value!,
+        image: previewImage.value,
+        properties: {
+          tags: tags.value,
+          image: imageOverride.value
+            ? {
+                uri: imageOverride.value || previewImage.value,
+                mime: imageOverride.value?.type,
+                bytesize: imageOverride.value?.size,
+              }
+            : undefined,
+        },
+      } as nftalent.Collectible.Image.Metadata;
+    case Tab.Redeemable:
+      return {
+        $schema: "nftalent/redeemable/base?v=1",
+        name: name.value!,
+        description: description.value!,
+        image: previewImage.value,
+        properties: {
+          tags: tags.value,
+          unit: redeemableUnit.value,
+        },
+      } as nftalent.Redeemable.Metadata;
+  }
+});
 
-const tokenSuper: ComputedRef<IPNFTModel> = computed(() => {
-  return new IPNFTModel(token.value, {
-    metadata: ref({
-      $schema: "nftalent/redeemable/base?v=1",
-      name: name.value!,
-      description: description.value!,
-      image: previewImage.value?.url,
-      properties: {
-        tags: tags.value,
-        unit: redeemableUnit.value,
-      },
-    } as nftalent.MetadataRedeemableBase),
-    ipnft: ref({
-      minter: eth.account.value!,
-      mintedAt: now,
-      royalty: royalty.value / 255,
-    }),
-    ipnft1155: ref({
-      balance: BigNumber.from(0),
-      totalSupply: BigNumber.from(editions.value || 0),
-      finalized: false, // TODO: finalize
-      expiredAt: isRedeemable.value ? redeemableExpiredAt.value : undefined,
-    }),
-    metaStore: ref({
-      primaryListing: new Listing({
-        token: { contract: MetaStore.account, id: token.value.id },
-        seller: eth.account.value!,
-        app: eth.app,
-        price: price.value,
-        stockSize: BigNumber.from(editions.value || 0),
-      }),
-    }),
-  });
+const tokenModel: ComputedRef<IPNFTModel> = computed(() => {
+  return new IPNFTModel(
+    new IPNFT.Token(
+      cid.value ||
+        CID.parse("bafyreial4ixkorwjjluaifmpbzdxgqmcmjcvzqx3c3k32syzcoeqjdsgum")
+    ),
+    {
+      metadata: ref(metadata.value),
+      ipnft721Minter: ref(eth.account.value),
+      ipnft721MintedAt: ref(now),
+      ipnft721Royalty: ref(royalty.value / 255),
+      ipnft1155Balance: ref(BigNumber.from(0)),
+      ipnft1155TotalSupply: ref(BigNumber.from(editions.value || 0)),
+      ipnft1155Finalized: ref(false),
+      ipnft1155ExpiredAt: ref(
+        tab.value == Tab.Redeemable ? redeemableExpiredAt.value : null
+      ),
+    }
+  );
 });
 
 async function mint() {
   if (!isCurrentlyMintable.value) throw new Error("Not mintable");
 
   mintStage.value = MintStage.UploadToIPFS;
-  const { root, ipnftTag } = await uploadToIpfs(
-    {
-      name: name.value!,
-      description: description.value!,
-      image: previewImage.value!,
-      properties: {
-        tags: tags.value,
-        unit: redeemableUnit.value!,
-      },
-    },
-    (progress) => {
-      uploadProgress.value = progress;
-    }
-  );
+  const { root, ipnftTag } = await uploadToIpfs(metadata.value, (progress) => {
+    uploadProgress.value = progress;
+  });
   cid.value = root.cid;
 
   mintStage.value = MintStage.MintIPNFT721;
   let tx = await mint721(root, ipnftTag, new Uint8(royalty.value));
   console.log("mintIPNFT", tx);
 
+  const expiredAt =
+    tab.value == Tab.Redeemable ? redeemableExpiredAt.value : undefined;
+
   mintStage.value = MintStage.MintIPNFT1155;
-  tx = await mint1155(
-    root.cid,
-    editions.value,
-    false,
-    redeemableExpiredAt.value!,
-    price.value
-  );
+  tx = await mint1155(root.cid, editions.value, false, expiredAt, price.value);
   console.log("mint1155", tx);
 
   mintStage.value = MintStage.Done;
@@ -225,10 +234,6 @@ eth.onConnect(async () => {
               @update:file="previewImage = $event"
               :disabled="mintInProgress"
             )
-          div
-            //- label.daisy-label
-            //-   span.daisy-label-text.font-semibold Help
-            //- p.p-4.bg-success.text-success-content.rounded-lg.h-32.text-sm For now, a token duration is set to 1 hour.
 
         label.daisy-label
           span.daisy-label-text.font-semibold 
@@ -303,44 +308,68 @@ eth.onConnect(async () => {
           :disabled="mintInProgress"
         )
 
-        //- TODO: Allow non-redeemable NFTs
-        label.daisy-label
+        label.daisy-label.min-w-min
           span.daisy-label-text.font-semibold 
-            span Redeemable?
-        input.daisy-toggle.daisy-toggle-primary(
-          type="checkbox"
-          v-model="isRedeemable"
-          disabled
-        )
+            span Token type
+        .daisy-tabs.daisy-tabs-boxed
+          .daisy-tab(
+            :class="{ 'daisy-tab-active': tab == Tab.CollectibeImage }"
+            @click="tab = Tab.CollectibeImage"
+          ) 🖼 Collectible
+          .daisy-tab(
+            :class="{ 'daisy-tab-active': tab == Tab.Redeemable }"
+            @click="tab = Tab.Redeemable"
+          ) 🎟 Redeemable
 
-        label.daisy-label
-          span.daisy-label-text.font-semibold 
-            span Redeemable unit
-            span.ml-1(v-if="!redeemableUnit") ⚠️
-        input.daisy-input.daisy-input-bordered.w-full(
-          type="text"
-          placeholder="1 hour"
-          v-model="redeemableUnit"
-          :disabled="mintInProgress"
-        )
+        template(v-if="tab == Tab.CollectibeImage")
+          label.daisy-label
+            span.daisy-label-text.font-semibold
+              span Full-size image (optional)
+          SelectImage.h-32.w-32.bg-base-200.rounded(
+            v-model:image="imageOverride"
+            :file="imageOverride"
+            @update:file="imageOverride = $event"
+            :disabled="mintInProgress"
+          )
 
-        label.daisy-label
-          span.daisy-label-text.font-semibold 
-            span Redeem expires at
-            span.ml-1(
-              v-if="!(redeemableExpiredAt && redeemableExpiredAt > now)"
-            ) ⚠️
-        input.daisy-input.daisy-input-bordered.w-full(
-          type="date"
-          :value="date2InputDate(redeemableExpiredAt)"
-          @change="onExpiresAtChange"
-          :disabled="mintInProgress"
-        )
+        template(v-else-if="tab == Tab.Redeemable")
+          label.daisy-label
+            span.daisy-label-text.font-semibold 
+              span Redeemable unit
+              span.ml-1(v-if="!redeemableUnit") ⚠️
+          input.daisy-input.daisy-input-bordered.w-full(
+            type="text"
+            placeholder="1 hour"
+            v-model="redeemableUnit"
+            :disabled="mintInProgress"
+          )
 
-      .w-full.p-4.bg-checkerboard.bg-fixed
-        Redeemable.rounded-lg.bg-base-100.shadow-lg(
-          :token="tokenSuper"
+          label.daisy-label
+            span.daisy-label-text.font-semibold 
+              span Redeem expires at
+              span.ml-1(
+                v-if="!(redeemableExpiredAt && redeemableExpiredAt > now)"
+              ) ⚠️
+          input.daisy-input.daisy-input-bordered.w-full(
+            type="date"
+            :value="date2InputDate(redeemableExpiredAt)"
+            @change="onExpiresAtChange"
+            :disabled="mintInProgress"
+          )
+
+      .w-full.p-4.bg-checkerboard.bg-fixed.grid.gap-3(
+        :class="{ 'grid-cols-3': tab == Tab.CollectibeImage, 'grid-cols-2': tab == Tab.Redeemable }"
+      )
+        Token.rounded-lg.bg-base-100.shadow-lg.h-min(
+          v-if="tab === Tab.CollectibeImage"
+          :token="tokenModel"
           :animatePlaceholder="false"
+          :kind="TokenKind.Card"
+        )
+        Token.rounded-lg.bg-base-100.shadow-lg.col-span-2(
+          :token="tokenModel"
+          :animatePlaceholder="false"
+          :kind="TokenKind.Full"
         )
 
       .p-4.flex.flex-col.text-base-content
@@ -367,6 +396,7 @@ eth.onConnect(async () => {
         )
           template(v-for="stage in Object.values(MintStage).length / 2")
             .daisy-step(
+              v-if="stage <= MintStage.Done"
               :data-content="stage"
               :class="{ 'daisy-step-primary': mintStage !== undefined && mintStage >= stage - 1 }"
             )
@@ -390,7 +420,15 @@ eth.onConnect(async () => {
                   max="100"
                 ) 
 
+        router-link.daisy-btn.daisy-btn-secondary.mt-2(
+          v-if="cid && mintStage == MintStage.Done"
+          :to="'/' + cid"
+        ) 
+          span.text-lg 👀
+          span Visit token
+
         button.daisy-btn.w-full.daisy-btn-primary.mt-2(
+          v-else
           @click="mint"
           :disabled="!isCurrentlyMintable || mintInProgress"
         ) 
@@ -408,11 +446,14 @@ import { ListingConfig } from "@/services/eth/contract/MetaStore";
 import { Block, encode as encodeBlock } from "multiformats/block";
 import { sha256 } from "multiformats/hashes/sha2";
 import * as dagCbor from "@ipld/dag-cbor";
-import { ipfsUri } from "@/services/ipfs";
 import { Web3Storage } from "web3.storage";
 import { pack } from "ipfs-car/pack";
 import { MemoryBlockStore } from "ipfs-car/blockstore/memory"; // You can also use the `level-blockstore` module
 import BlockstoreCarReader from "@/services/ipfs/blockstore-car-reader";
+import { type Blockstore } from "ipfs-car/blockstore";
+import { RouterLink } from "vue-router";
+import { type ToFile } from "ipfs-core-types/src/utils";
+import { ipfsUri } from "@/services/ipfs";
 
 async function mint721(
   root: Block<unknown>,
@@ -426,7 +467,7 @@ async function mint1155(
   cid: CID,
   amount: BigNumberish,
   finalize: boolean,
-  expiredAt: Date,
+  expiredAt: Date | undefined,
   price: BigNumberish
 ): Promise<ContractTransaction> {
   return await eth.ipnft1155.mint(
@@ -443,15 +484,74 @@ async function mint1155(
   );
 }
 
-// TODO: Implement NFT.storage logic, that is iterate through
-// the metadata object and replace files with CIDs.
+/**
+ * Packs files contained in `metadata` into a separate folder within `blockstore`
+ * and returns the directory CID along with JSON-ified metadata object.
+ */
+async function processMetadata(
+  blockstore: Blockstore,
+  metadata: nftalent.Collectible.Image.Metadata | nftalent.Redeemable.Metadata
+): Promise<{ contentCID: CID; jsonMetadata: any }> {
+  const input: ToFile[] = [];
+
+  if (!(metadata.image instanceof File)) {
+    throw new Error("metadata.image is not a file");
+  }
+
+  input.push({
+    path: metadata.image.name,
+    content: new Uint8Array(await metadata.image.arrayBuffer()),
+  });
+
+  switch (metadata.$schema) {
+    case "nftalent/collectible/image?v=1": {
+      if (metadata.properties.image?.uri) {
+        console.debug(
+          "metadata.properties.image.uri",
+          metadata.properties.image.uri
+        );
+
+        if (!(metadata.properties.image.uri instanceof File)) {
+          throw new Error("metadata.properties.image.uri is not a file");
+        }
+
+        input.push({
+          path: metadata.properties.image.uri.name,
+          content: new Uint8Array(
+            await metadata.properties.image.uri.arrayBuffer()
+          ),
+        });
+      }
+    }
+  }
+
+  const { root: contentCID } = await pack({
+    input,
+    blockstore,
+    hasher: sha256,
+    wrapWithDirectory: true, // Wraps input into a directory. Defaults to `true`
+    // maxChunkSize: 1024 * 1024,
+  });
+
+  const jsonMetadata = JSON.parse(JSON.stringify(metadata));
+
+  jsonMetadata.image = new URL(ipfsUri(contentCID) + metadata.image.name);
+
+  switch (metadata.$schema) {
+    case "nftalent/collectible/image?v=1": {
+      if (metadata.properties.image?.uri) {
+        jsonMetadata.properties.image.uri = new URL(
+          ipfsUri(contentCID) + metadata.properties.image.uri.name
+        );
+      }
+    }
+  }
+
+  return { contentCID, jsonMetadata };
+}
+
 async function uploadToIpfs(
-  metadata: {
-    name: string;
-    image: FileWithUrl;
-    description: string;
-    properties: { tags: string[]; unit: string };
-  },
+  metadata: nftalent.Collectible.Image.Metadata | nftalent.Redeemable.Metadata,
   progressCallback: (fraction: number) => void
 ): Promise<{
   root: Block<unknown>;
@@ -462,31 +562,17 @@ async function uploadToIpfs(
 
   const blockstore = new MemoryBlockStore();
 
-  const { root: imageCid } = await pack({
-    input: new Uint8Array(await metadata.image.arrayBuffer()),
+  const { contentCID, jsonMetadata } = await processMetadata(
     blockstore,
-    hasher: sha256,
-    wrapWithDirectory: false, // Wraps input into a directory. Defaults to `true`
-    maxChunkSize: 1024 * 1024,
-  });
+    metadata
+  );
 
   const { root: metadataCid } = await pack({
-    input: new TextEncoder().encode(
-      JSON.stringify({
-        $schema: "nftalent/redeemable/base?v=1",
-        name: metadata.name,
-        description: metadata.description,
-        image: ipfsUri(imageCid).toString(),
-        properties: {
-          tags: metadata.properties.tags,
-          unit: metadata.properties.unit,
-        },
-      } as nftalent.MetadataRedeemableBase)
-    ),
+    input: new TextEncoder().encode(JSON.stringify(jsonMetadata)),
     blockstore,
     hasher: sha256,
     wrapWithDirectory: false,
-    maxChunkSize: 1024 * 1024,
+    // maxChunkSize: 1024 * 1024,
   });
 
   const ipnftTag = new IPNFT.Tag(
@@ -498,7 +584,7 @@ async function uploadToIpfs(
 
   const root = await encodeBlock({
     value: {
-      image: imageCid,
+      content: contentCID,
       "metadata.json": metadataCid,
       ipnft: ipnftTag.bytes,
     },
