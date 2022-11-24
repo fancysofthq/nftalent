@@ -86,6 +86,10 @@ export default class Persona {
     return this._contract.setBasicPfp(token.contract.address, token.id);
   }
 
+  async setPfa(pfa: string) {
+    return this._contract.setBasicPfa(pfa);
+  }
+
   private async _syncBasicPfp(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "Persona.SetBasicPfp",
