@@ -3,6 +3,7 @@ import PFP from "@/components/shared/PFP.vue";
 import Account from "@/services/eth/Account";
 import { computed, onMounted, ref, type ShallowRef } from "vue";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
+import TokenModal from "@/components/modals/Token.vue";
 import IPNFTModel, { getOrCreate as getOrCreateIPNFT } from "@/models/IPNFT";
 import edb from "@/services/eth/event-db";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
@@ -10,6 +11,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 
 const props = defineProps<{ account: Account }>();
 const tokens: ShallowRef<IPNFTModel[]> = ref([]);
+const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
 
 const redeemables = computed(() =>
   tokens.value.filter((t) => t.ipnft1155ExpiredAt)
@@ -47,17 +49,26 @@ onMounted(() => {
       h2.font-bold.text-lg Redeemables ({{ redeemables.length }}) 🎟
       //- TODO: Horizontally scrollable.
       .grid.grid-cols-4.gap-3
-        Token.rounded.shadow.bg-base-100.transition-transform.active_scale-95(
+        Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
           v-for="token in redeemables"
           :token="token"
           :kind="TokenKind.Thumbnail"
+          @click="tokenModal = token"
         )
 
     h2.font-bold.text-lg Collectibles ({{ collectibles.length }}) 🧸
     .grid.grid-cols-3.gap-3
-      Token.rounded.shadow.bg-base-100.transition-transform.active_scale-95(
+      Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
         v-for="token in collectibles"
         :token="token"
         :kind="TokenKind.Card"
+        @click="tokenModal = token"
       )
+
+Teleport(to="body")
+  TokenModal(
+    v-if="tokenModal"
+    @close="tokenModal = undefined"
+    :ipnft="tokenModal"
+  )
 </template>

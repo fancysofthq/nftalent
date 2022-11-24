@@ -124,7 +124,7 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
   style="grid-template-rows: min-content auto"
 )
   // Image
-  router-link.contents(tabindex="-1" :to="'/' + token.token.cid.toString()")
+  .contents(tabindex="-1" :to="'/' + token.token.cid.toString()")
     .rounded-lg.aspect-square.object-contain.w-full.h-full.bg-cover.bg-center(
       v-if="imageUrl"
       :style="'background-image: url(' + imageUrl.toString() + ');'"
@@ -148,7 +148,7 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
       .flex.flex-col(:class="kind === Kind.FeedEntry ? 'gap-1' : 'gap-2'")
         // Title
         span.flex.flex-wrap.items-center.gap-1
-          router-link.font-bold.text-primary.daisy-link-hover.text-lg.leading-none(
+          span.font-bold.text-primary.text-lg.leading-none(
             v-if="token.metadata?.name"
             :to="'/' + token.token.cid.toString()"
           ) {{ token.metadata.name }}

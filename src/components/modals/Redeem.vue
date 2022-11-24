@@ -4,7 +4,6 @@ import { BigNumber } from "ethers";
 import { computed, ref } from "vue";
 import * as eth from "@/services/eth";
 import IPNFT from "@/models/IPNFT";
-import Chip from "@/components/shared/Chip.vue";
 import IPNFTRedeemable from "@/services/eth/contract/IPNFT1155";
 
 const props = defineProps<{
@@ -35,8 +34,12 @@ async function transact() {
 </script>
 
 <template lang="pug">
-.fixed.top-0.w-full.bg-black.bg-opacity-25.z-20.h-screen.flex.justify-center.items-center.backdrop-blur
+//- FIXME: Buggy on small-height screens
+.fixed.left-0.top-0.w-full.bg-black.bg-opacity-25.z-20.h-screen.flex.justify-center.items-center.backdrop-blur.p-4(
+  style="position: fixed"
+)
   OnClickOutside.transition-opacity.w-full.max-w-lg.bg-base-100.rounded-lg.shadow-lg(
+    style="max-height: 100%"
     @trigger="emit('close')"
   )
     .flex.flex-col.divide-y

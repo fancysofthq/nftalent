@@ -9,6 +9,8 @@ type Entry = {
   token: IPNFT;
 };
 
+const emit = defineEmits<{ (event: "entryClick", ipnft: IPNFT): void }>();
+
 const entries: Ref<Entry[]> = ref([]);
 let cancel = false;
 
@@ -40,6 +42,7 @@ Entry.p-4(
   :event="entry.event"
   :token="entry.token"
   style="grid-template-columns: 7rem auto"
+  @entry-click="emit('entryClick', entry.token)"
 )
 .p-4.text-base-content.text-center(v-else) Empty feed
 </template>
@@ -123,19 +126,19 @@ async function subscribeToFeed(
       )
     );
 
-    // Purchase
-    promises.push(
-      edb.iterateEventsIndex(
-        "MetaStore.Purchase",
-        "blockNumber",
-        IDBKeyRange.bound(purchaseBlock, Number.MAX_SAFE_INTEGER),
-        "next",
-        (e) => {
-          purchaseBlock = e.blockNumber + 1;
-          events.push(new EventWrapper(EventKind.Purchase, e));
-        }
-      )
-    );
+    // // Purchase
+    // promises.push(
+    //   edb.iterateEventsIndex(
+    //     "MetaStore.Purchase",
+    //     "blockNumber",
+    //     IDBKeyRange.bound(purchaseBlock, Number.MAX_SAFE_INTEGER),
+    //     "next",
+    //     (e) => {
+    //       purchaseBlock = e.blockNumber + 1;
+    //       events.push(new EventWrapper(EventKind.Purchase, e));
+    //     }
+    //   )
+    // );
 
     await Promise.all(promises);
 

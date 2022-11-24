@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
 import Account from "@/services/eth/Account";
-import * as ipfs from "@/services/ipfs";
 import IPNFT from "@/models/IPNFT";
 import Placeholder from "@/components/shared/Placeholder.vue";
 import Chip from "@/components/shared/Chip.vue";
@@ -11,6 +10,8 @@ import { formatDistance } from "date-fns";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
 
 const props = defineProps<{ event: EventWrapper; token: IPNFT }>();
+const emit = defineEmits<{ (event: "entryClick", token: IPNFT): void }>();
+
 const timestamp: Ref<Date | undefined> = ref();
 
 onMounted(() => props.token.fetchIPFSMetadata());
@@ -75,10 +76,9 @@ const eventActor = computed(() => {
     Placeholder.inline-block.h-5.w-12(v-else)
 
   .border.rounded(v-if="event.isList" style="grid-template-columns: 4rem auto")
-    Token(:token="token" :kind="TokenKind.Full")
-
-  .border.rounded(v-else)
-    Token(:token="token" :kind="TokenKind.FeedEntry")
+    Token.cursor-pointer(
+      :token="token"
+      :kind="TokenKind.Full"
+      @click.prevent="emit('entryClick', token)"
+    )
 </template>
-
-<style scoped lang="scss"></style>

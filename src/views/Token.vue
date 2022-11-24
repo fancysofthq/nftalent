@@ -41,7 +41,9 @@ eth.onConnect(() => props.ipnft.fetchEthMetadata());
   .w-full.max-w-3xl.flex.flex-col.gap-2
     h2.font-bold.text-lg 
       span.inline-block.select-none Token 💎
-      span.text-gray-500.text-sm.ml-2 {{ props.ipnft.token.cid }}
+      router-link.text-gray-500.text-sm.ml-2.daisy-link-hover(
+        :to="'/' + props.ipnft.token.cid.toString()"
+      ) {{ props.ipnft.token.cid }}
     Token.border.rounded-lg(
       :token="ipnft"
       :showRedeemButton="true"
@@ -77,17 +79,17 @@ eth.onConnect(() => props.ipnft.fetchEthMetadata());
     .border.rounded-lg.flex-col.gap-2.divide-y
       History(:token="ipnft.token")
 
-Teleport(to="body")
-  Purchase(
-    v-if="purchaseListing"
-    @close="purchaseListing = undefined"
-    :listing="purchaseListing"
-    :ipnft="ipnft"
-  )
-  Redeem(
-    v-if="redeemModal && ipnft.ipnft1155Balance?.gt(0) && ipnft.ipnft1155ExpiredAt && ipnft.ipnft1155ExpiredAt.valueOf() > 0"
-    @close="redeemModal = false"
-    :ipnft="ipnft"
-    :balance="ipnft.ipnft1155Balance"
-  )
+    Purchase(
+      v-if="purchaseListing"
+      @close="purchaseListing = undefined"
+      :listing="purchaseListing"
+      :ipnft="ipnft"
+    )
+
+    Redeem(
+      v-if="redeemModal && ipnft.ipnft1155Balance?.gt(0) && ipnft.ipnft1155ExpiredAt && ipnft.ipnft1155ExpiredAt.valueOf() > 0"
+      @close="redeemModal = false"
+      :ipnft="ipnft"
+      :balance="ipnft.ipnft1155Balance"
+    )
 </template>
