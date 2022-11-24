@@ -108,6 +108,11 @@ export default class IPNFT721 {
             currentOwner: e.to,
             ipnft721MintEvent: [e.blockNumber, e.logIndex],
           });
+        } else {
+          const token = await tx.objectStore("IPNFT").get(e.tokenId);
+          if (token === undefined) throw "IPNFT not found";
+          token.currentOwner = e.to;
+          await tx.objectStore("IPNFT").put(token);
         }
       }
     );

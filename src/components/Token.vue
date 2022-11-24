@@ -18,6 +18,7 @@ import { formatDistance } from "date-fns";
 import * as IPFS from "@/services/ipfs";
 import * as nftalent from "@/nftalent";
 import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
+import { EllipsisHorizontalIcon } from "@heroicons/vue/24/outline";
 
 const {
   token,
@@ -116,6 +117,20 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
     return urlFromImage(token.metadata.image);
   }
 });
+
+const maySetPfp = computed(() => {
+  return (
+    token.ipnft1155ExpiredAt == null &&
+    eth.account.value &&
+    token.ipnft721CurrentOwner?.equals(eth.account.value)
+  );
+});
+
+async function setPfp() {
+  if (!maySetPfp.value) throw "Not allowed";
+  const tx = await eth.persona.setPfp(token.token.toERC721Token().toNFT());
+  console.debug("Set PFP", tx);
+}
 </script>
 
 <template lang="pug">
@@ -147,12 +162,21 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
       // Basic information
       .flex.flex-col(:class="kind === Kind.FeedEntry ? 'gap-1' : 'gap-2'")
         // Title
-        span.flex.flex-wrap.items-center.gap-1
+        span.flex.flex-wrap.items-center.justify-between.gap-1
           span.font-bold.text-primary.text-lg.leading-none(
             v-if="token.metadata?.name"
             :to="'/' + token.token.cid.toString()"
           ) {{ token.metadata.name }}
           Placeholder.h-5.w-48(v-else :animate="animatePlaceholder")
+
+          .daisy-dropdown.daisy-dropdown-end(v-if="kind === Kind.Full")
+            label(tabindex="0")
+              EllipsisHorizontalIcon.h-6.w-6.cursor-pointer.transition-transform.duration-100.active_scale-90
+            ul.daisy-menu.daisy-dropdown-content.rounded.w-52.bg-base-100.shadow-lg.divide-y(
+              tabindex="0"
+            )
+              li(v-if="maySetPfp")
+                button(@click="setPfp") ⛓🖼 Set as PFP
 
         // Tags
         .flex.flex-wrap.gap-1(v-if="anyTags")

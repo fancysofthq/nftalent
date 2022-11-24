@@ -21,6 +21,7 @@ export default class IPNFT {
   private readonly _ipnft721Minter: Ref<Account | undefined> = ref();
   private readonly _ipnft721MintedAt: Ref<Date | undefined> = ref();
   private readonly _ipnft721Royalty: Ref<number | undefined> = ref();
+  private readonly _ipnft721CurrentOwner: Ref<Account | undefined> = ref();
 
   private readonly _ipnft1155Balance: Ref<BigNumber | undefined> = ref();
   private readonly _ipnft1155TotalSupply: Ref<BigNumber | undefined> = ref();
@@ -31,6 +32,7 @@ export default class IPNFT {
   private _ipnft721MinterPromise?: Promise<Account>;
   private _ipnft721MintedAtPromise?: Promise<Date | undefined>;
   private _ipnft721RoyaltyPromise?: Promise<number>;
+  private _ipnft721CurrentOwnerPromise?: Promise<Account>;
   private _ipnft1155BalancePromise?: Promise<BigNumber>;
   private _ipnft1155TotalSupplyPromise?: Promise<BigNumber>;
   private _ipnft1155FinalizedPromise?: Promise<boolean | null>;
@@ -43,6 +45,7 @@ export default class IPNFT {
       ipnft721Minter,
       ipnft721MintedAt,
       ipnft721Royalty,
+      ipnft721CurrentOwner,
       ipnft1155Balance,
       ipnft1155TotalSupply,
       ipnft1155Finalized,
@@ -52,6 +55,7 @@ export default class IPNFT {
       ipnft721Minter: Ref<Account | undefined>;
       ipnft721MintedAt: Ref<Date | undefined>;
       ipnft721Royalty: Ref<number | undefined>;
+      ipnft721CurrentOwner: Ref<Account | undefined>;
       ipnft1155Balance: Ref<BigNumber | undefined>;
       ipnft1155TotalSupply: Ref<BigNumber | undefined>;
       ipnft1155Finalized: Ref<boolean | null | undefined>;
@@ -61,6 +65,7 @@ export default class IPNFT {
       ipnft721Minter: ref(),
       ipnft721MintedAt: ref(),
       ipnft721Royalty: ref(),
+      ipnft721CurrentOwner: ref(),
       ipnft1155Balance: ref(),
       ipnft1155TotalSupply: ref(),
       ipnft1155Finalized: ref(),
@@ -72,6 +77,7 @@ export default class IPNFT {
     this._ipnft721Minter = ipnft721Minter;
     this._ipnft721MintedAt = ipnft721MintedAt;
     this._ipnft721Royalty = ipnft721Royalty;
+    this._ipnft721CurrentOwner = ipnft721CurrentOwner;
     this._ipnft1155Balance = ipnft1155Balance;
     this._ipnft1155TotalSupply = ipnft1155TotalSupply;
     this._ipnft1155Finalized = ipnft1155Finalized;
@@ -108,6 +114,14 @@ export default class IPNFT {
 
   set ipnft721Royalty(value: number | undefined) {
     this._ipnft721Royalty.value = value;
+  }
+
+  get ipnft721CurrentOwner(): Account | undefined {
+    return this._ipnft721CurrentOwner.value;
+  }
+
+  set ipnft721CurrentOwner(value: Account | undefined) {
+    this._ipnft721CurrentOwner.value = value;
   }
 
   get ipnft1155Balance(): BigNumber | undefined {
@@ -172,6 +186,10 @@ export default class IPNFT {
 
     this._ipnft721Royalty.value ||= await (this._ipnft721RoyaltyPromise ||=
       (async () => await eth.ipnft721.royaltyNumber(this.token))());
+
+    this._ipnft721CurrentOwner.value ||=
+      await (this._ipnft721CurrentOwnerPromise ||= (async () =>
+        await eth.ipnft721.ownerOf(this.token))());
   }
 
   private async _fetchIPNFT1155(): Promise<void> {

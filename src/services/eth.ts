@@ -4,6 +4,7 @@ import Account from "./eth/Account";
 import IPNFT721 from "./eth/contract/IPNFT721";
 import IPNFT1155 from "./eth/contract/IPNFT1155";
 import MetaStore from "./eth/contract/MetaStore";
+import Persona from "./eth/contract/Persona";
 import edb from "./eth/event-db";
 
 const PROVIDER_KEY = "eth.wallet.provider";
@@ -16,6 +17,7 @@ export const app = new Account(import.meta.env.VITE_APP_ADDRESS);
 export let ipnft721: IPNFT721;
 export let ipnft1155: IPNFT1155;
 export let metaStore: MetaStore;
+export let persona: Persona;
 
 export async function tryLogin() {
   const storedProvider = window.localStorage.getItem(PROVIDER_KEY);
@@ -43,6 +45,7 @@ export async function login() {
   ipnft721 = new IPNFT721(provider.value.getSigner());
   ipnft1155 = new IPNFT1155(provider.value.getSigner());
   metaStore = new MetaStore(provider.value.getSigner());
+  persona = new Persona(provider.value.getSigner());
 
   provider.value.getBlockNumber().then((untilBlock) => {
     console.debug("Syncing events until block", untilBlock);
@@ -50,6 +53,7 @@ export async function login() {
     ipnft721.sync(edb, untilBlock);
     ipnft1155.sync(edb, untilBlock);
     metaStore.sync(edb, app.address, untilBlock);
+    persona.sync(edb, untilBlock, app.address);
   });
 
   fireOnConnectCallbacks();

@@ -1,7 +1,10 @@
-import { BigNumber } from "ethers";
+import { Ierc721 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc721";
+import { abi } from "@/../lib/ipnft/waffle/IERC721.json";
+import { BigNumber, Signer } from "ethers";
 import Account from "../Account";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
+import { Provider } from "@ethersproject/abstract-provider";
 
 /**
  * Solidity mapping:
@@ -38,5 +41,13 @@ export class Token {
       contract: this.contract,
       id: this.id,
     };
+  }
+}
+
+export default class IERC721 {
+  private readonly _contract: BaseType;
+
+  constructor(address: string, providerOrSigner: Provider | Signer) {
+    this._contract = new BaseType(address, abi, providerOrSigner);
   }
 }

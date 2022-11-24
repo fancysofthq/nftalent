@@ -150,6 +150,7 @@ const tokenModel: ComputedRef<IPNFTModel> = computed(() => {
       ipnft721Minter: ref(eth.account.value),
       ipnft721MintedAt: ref(now),
       ipnft721Royalty: ref(royalty.value / 255),
+      ipnft721CurrentOwner: ref(eth.account.value),
       ipnft1155Balance: ref(BigNumber.from(0)),
       ipnft1155TotalSupply: ref(BigNumber.from(editions.value || 0)),
       ipnft1155Finalized: ref(false),

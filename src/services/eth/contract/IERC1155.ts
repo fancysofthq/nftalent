@@ -1,8 +1,11 @@
 import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
-import { BigNumber } from "ethers";
+import { Ierc1155 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc1155";
+import { abi } from "@/../lib/ipnft/waffle/IERC1155.json";
+import { BigNumber, Signer } from "ethers";
 import Account from "../Account";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
+import { Provider } from "@ethersproject/abstract-provider";
 
 export type Metadata = {
   $schema: string;
@@ -59,5 +62,13 @@ export class Token {
       contract: this.contract,
       id: this.id,
     };
+  }
+}
+
+export default class IERC1155 {
+  private readonly _contract: BaseType;
+
+  constructor(address: string, providerOrSigner: Provider | Signer) {
+    this._contract = new BaseType(address, abi, providerOrSigner);
   }
 }

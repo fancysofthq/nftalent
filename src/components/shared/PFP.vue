@@ -1,33 +1,111 @@
-<script setup lang="ts">
-import type Account from "@/services/eth/Account";
-import { computed } from "@vue/reactivity";
-import * as jdenticon from "jdenticon";
-import { type Ref, ref, onMounted } from "vue";
-
-interface Props {
-  account: Account;
-  mask?: "squircle";
+<script lang="ts">
+function pfpCacheKey(account: string) {
+  return `cache.pfp.${account}`;
 }
 
-const { account, mask } = defineProps<Props>();
+export function invalidatePfpCache(account: string) {
+  localStorage.removeItem(pfpCacheKey(account));
+}
 
+/**
+ * Return a raw `"image"` key value from an according NFT metadata.
+ */
+export async function queryPfpUrl(account: string): Promise<URL | undefined> {
+  const cached = localStorage.getItem(pfpCacheKey(account));
+
+  if (cached) {
+    return new URL(cached);
+  }
+
+  const accountObj = await eventDb.db.get("Account", account);
+
+  const pfp =
+    accountObj?.personas.apps[eth.app.address]?.pfp ||
+    accountObj?.personas.basic?.pfp;
+
+  if (pfp) {
+    const erc165 = new IERC165(pfp.contractAddress, eth.provider.value!);
+    let rawTokenURI: string;
+
+    if (await erc165.supportsInterface(IERC721Metadata.interfaceId)) {
+      const erc721 = new IERC721Metadata(
+        pfp.contractAddress,
+        eth.provider.value!
+      );
+
+      rawTokenURI = (
+        await erc721.tokenURI(
+          new IERC721Token(
+            new Account(pfp.contractAddress),
+            BigNumber.from(pfp.tokenId)
+          )
+        )
+      ).replaceAll("{id}", pfp.tokenId.slice(2));
+    } else if (
+      await erc165.supportsInterface(IERC1155MetadataURI.interfaceId)
+    ) {
+      const nft = new IERC1155MetadataURI(
+        pfp.contractAddress,
+        eth.provider.value!
+      );
+
+      rawTokenURI = (
+        await nft.uri(
+          new IERC721Token(
+            new Account(pfp.contractAddress),
+            BigNumber.from(pfp.tokenId)
+          )
+        )
+      ).replaceAll("{id}", pfp.tokenId.slice(2));
+    } else {
+      throw new Error("Unsupported PFP contract");
+    }
+
+    const processedTokenURI = IPFS.processUri(new URL(rawTokenURI));
+    const response = await fetch(processedTokenURI);
+    const json = await response.json();
+    const image = json.image;
+
+    localStorage.setItem(pfpCacheKey(account), image);
+
+    return new URL(image);
+  }
+}
+</script>
+
+<script setup lang="ts">
+import Account from "@/services/eth/Account";
+import eventDb from "@/services/eth/event-db";
+import * as jdenticon from "jdenticon";
+import { type Ref, ref, onMounted } from "vue";
+import * as eth from "@/services/eth";
+import { BigNumber } from "@ethersproject/bignumber";
+import { Token as IERC721Token } from "@/services/eth/contract/IERC721";
+import IERC165 from "@/services/eth/contract/IERC165";
+import IERC721Metadata from "@/services/eth/contract/IERC721Metadata";
+import * as IPFS from "@/services/ipfs";
+import IERC1155MetadataURI from "@/services/eth/contract/IERC1155MetadataURI";
+
+const props = defineProps<{ account: Account }>();
+const img: Ref<URL | undefined> = ref();
 const svgRef: Ref<SVGElement | null> = ref(null);
 
 function updateSvg() {
-  jdenticon.updateSvg(svgRef.value!, account.toString());
+  jdenticon.updateSvg(svgRef.value!, props.account.toString());
 }
 
-const maskClass = computed(() => {
-  if (mask === "squircle") {
-    return "daisy-mask daisy-mask-squircle";
-  }
-
-  return "";
+onMounted(() => {
+  updateSvg();
+  queryPfp();
 });
 
-onMounted(updateSvg);
+async function queryPfp() {
+  const url = await queryPfpUrl(props.account.toString());
+  if (url) img.value = IPFS.processUri(url);
+}
 </script>
 
 <template lang="pug">
-svg(ref="svgRef" :class="maskClass")
+img.daisy-mask.daisy-mask-hexagon(v-if="img" :src="img.toString()")
+svg.daisy-mask.daisy-mask-squircle(ref="svgRef" v-else)
 </template>

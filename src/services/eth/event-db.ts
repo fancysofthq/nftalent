@@ -12,6 +12,16 @@ import {
 import { Transfer as IERC1155Transfer } from "./contract/IERC1155";
 import { Transfer as IERC721Transfer } from "./contract/IERC721";
 import { List, Replenish, Withdraw, Purchase } from "./contract/MetaStore";
+import {
+  SetBasicPfp,
+  SetBasicBgp,
+  SetBasicPfa,
+  SetBasicMetadata,
+  SetAppPfp,
+  SetAppBgp,
+  SetAppPfa,
+  SetAppMetadata,
+} from "./contract/Persona";
 
 export type Event =
   | IERC721Transfer
@@ -38,7 +48,23 @@ export type IPNFT = {
   ipnft1155ExpiredAt?: Date | null;
 };
 
+export type Persona = {
+  pfp?: { contractAddress: string; tokenId: string };
+  bgp?: { contractAddress: string; tokenId: string };
+  pfa?: string;
+  metadata?: Uint8Array;
+};
+
+export type Account = {
+  address: string;
+  personas: {
+    basic?: Persona;
+    apps: Record<string, Persona>;
+  };
+};
+
 interface Schema extends DBSchema {
+  // It's a part of the DB to ensure atomicity.
   latestFetchedEventBlock: {
     key: string;
     value: number;
@@ -139,99 +165,216 @@ interface Schema extends DBSchema {
       currentOwner: string;
     };
   };
+
+  Account: {
+    key: string;
+    value: Account;
+  };
+
+  "Persona.SetBasicPfp": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetBasicPfp;
+    indexes: { account: string };
+  };
+
+  "Persona.SetBasicBgp": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetBasicBgp;
+    indexes: { account: string };
+  };
+
+  "Persona.SetBasicPfa": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetBasicPfa;
+    indexes: { account: string };
+  };
+
+  "Persona.SetBasicMetadata": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetBasicMetadata;
+    indexes: { account: string };
+  };
+
+  "Persona.SetAppPfp": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetAppPfp;
+    indexes: { account: string };
+  };
+
+  "Persona.SetAppBgp": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetAppBgp;
+    indexes: { account: string };
+  };
+
+  "Persona.SetAppPfa": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetAppPfa;
+    indexes: { account: string };
+  };
+
+  "Persona.SetAppMetadata": {
+    key: [number, number]; // blockNumber + logIndex
+    value: SetAppMetadata;
+    indexes: { account: string };
+  };
 }
 
 const SYNC_BLOCK_BATCH_SIZE = 10;
 
 export class EventDB {
-  private db!: IDBPDatabase<Schema>;
+  private _db!: IDBPDatabase<Schema>;
+
+  get db(): IDBPDatabase<Schema> {
+    return this._db;
+  }
 
   async open() {
-    this.db = await openDB<Schema>("eth_event_db", 1, {
-      upgrade(db) {
-        const e1 = db.createObjectStore("IPNFT721.Transfer", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
+    this._db = await openDB<Schema>("eth_event_db", 2, {
+      upgrade(db, oldVersion, newVersion) {
+        if (oldVersion < 1) {
+          console.debug("Upgrading DB from version 0");
 
-        e1.createIndex("blockNumber", "blockNumber");
-        e1.createIndex("from", "from");
-        e1.createIndex("to", "to");
-        e1.createIndex("tokenId", "tokenId");
-        e1.createIndex("from-blockNumber", ["from", "blockNumber"]);
-        e1.createIndex("from-tokenId", ["from", "tokenId"]);
-        e1.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
-        e1.createIndex("to-blockNumber", ["to", "blockNumber"]);
-        e1.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
-        e1.createIndex("to-tokenId-blockNumber", [
-          "to",
-          "tokenId",
-          "blockNumber",
-        ]);
+          const latestFetchedEventBlock = db.createObjectStore(
+            "latestFetchedEventBlock"
+          );
 
-        const e2 = db.createObjectStore("IPNFT1155.Transfer", {
-          keyPath: ["blockNumber", "logIndex", "subIndex"],
-        });
+          const e1 = db.createObjectStore("IPNFT721.Transfer", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
 
-        e2.createIndex("blockNumber", "blockNumber");
-        e2.createIndex("from", "from");
-        e2.createIndex("to", "to");
-        e2.createIndex("id", "id");
-        e2.createIndex("from-blockNumber", ["from", "blockNumber"]);
-        e2.createIndex("from-id", ["from", "id"]);
-        e2.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
-        e2.createIndex("to-blockNumber", ["to", "blockNumber"]);
-        e2.createIndex("id-blockNumber", ["id", "blockNumber"]);
-        e2.createIndex("to-id-blockNumber", ["to", "id", "blockNumber"]);
+          e1.createIndex("blockNumber", "blockNumber");
+          e1.createIndex("from", "from");
+          e1.createIndex("to", "to");
+          e1.createIndex("tokenId", "tokenId");
+          e1.createIndex("from-blockNumber", ["from", "blockNumber"]);
+          e1.createIndex("from-tokenId", ["from", "tokenId"]);
+          e1.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
+          e1.createIndex("to-blockNumber", ["to", "blockNumber"]);
+          e1.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
+          e1.createIndex("to-tokenId-blockNumber", [
+            "to",
+            "tokenId",
+            "blockNumber",
+          ]);
 
-        const e3 = db.createObjectStore("MetaStore.List", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
+          const e2 = db.createObjectStore("IPNFT1155.Transfer", {
+            keyPath: ["blockNumber", "logIndex", "subIndex"],
+          });
 
-        e3.createIndex("blockNumber", "blockNumber");
-        e3.createIndex("listingId", "listingId");
-        e3.createIndex("tokenId", "token.id");
-        e3.createIndex("seller", "seller");
-        e3.createIndex("seller-blockNumber", ["seller", "blockNumber"]);
-        e3.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
+          e2.createIndex("blockNumber", "blockNumber");
+          e2.createIndex("from", "from");
+          e2.createIndex("to", "to");
+          e2.createIndex("id", "id");
+          e2.createIndex("from-blockNumber", ["from", "blockNumber"]);
+          e2.createIndex("from-id", ["from", "id"]);
+          e2.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
+          e2.createIndex("to-blockNumber", ["to", "blockNumber"]);
+          e2.createIndex("id-blockNumber", ["id", "blockNumber"]);
+          e2.createIndex("to-id-blockNumber", ["to", "id", "blockNumber"]);
 
-        const e4 = db.createObjectStore("MetaStore.Replenish", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
+          const e3 = db.createObjectStore("MetaStore.List", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
 
-        e4.createIndex("blockNumber", "blockNumber");
-        e4.createIndex("listingId", "listingId");
-        e4.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
+          e3.createIndex("blockNumber", "blockNumber");
+          e3.createIndex("listingId", "listingId");
+          e3.createIndex("tokenId", "token.id");
+          e3.createIndex("seller", "seller");
+          e3.createIndex("seller-blockNumber", ["seller", "blockNumber"]);
+          e3.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
 
-        const e5 = db.createObjectStore("MetaStore.Withdraw", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
+          const e4 = db.createObjectStore("MetaStore.Replenish", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
 
-        e5.createIndex("blockNumber", "blockNumber");
-        e5.createIndex("listingId", "listingId");
-        e5.createIndex("to", "to");
-        e5.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-        e5.createIndex("to-blockNumber", ["to", "blockNumber"]);
+          e4.createIndex("blockNumber", "blockNumber");
+          e4.createIndex("listingId", "listingId");
+          e4.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
 
-        const e6 = db.createObjectStore("MetaStore.Purchase", {
-          keyPath: ["blockNumber", "logIndex"],
-        });
+          const e5 = db.createObjectStore("MetaStore.Withdraw", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
 
-        e6.createIndex("blockNumber", "blockNumber");
-        e6.createIndex("listingId", "listingId");
-        e6.createIndex("buyer", "buyer");
-        e6.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
-        e6.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-        e6.createIndex("buyer-blockNumber", ["buyer", "blockNumber"]);
+          e5.createIndex("blockNumber", "blockNumber");
+          e5.createIndex("listingId", "listingId");
+          e5.createIndex("to", "to");
+          e5.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
+          e5.createIndex("to-blockNumber", ["to", "blockNumber"]);
 
-        const latestFetchedEventBlock = db.createObjectStore(
-          "latestFetchedEventBlock"
-        );
+          const e6 = db.createObjectStore("MetaStore.Purchase", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
 
-        const o1 = db.createObjectStore("IPNFT", {
-          keyPath: "id",
-        });
+          e6.createIndex("blockNumber", "blockNumber");
+          e6.createIndex("listingId", "listingId");
+          e6.createIndex("buyer", "buyer");
+          e6.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
+          e6.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
+          e6.createIndex("buyer-blockNumber", ["buyer", "blockNumber"]);
 
-        o1.createIndex("currentOwner", "currentOwner");
+          const o1 = db.createObjectStore("IPNFT", {
+            keyPath: "id",
+          });
+
+          o1.createIndex("currentOwner", "currentOwner");
+        }
+
+        if (oldVersion < 2) {
+          console.debug("Upgrading DB from version 1");
+
+          const e1 = db.createObjectStore("Persona.SetBasicPfp", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e1.createIndex("account", "account");
+
+          const e2 = db.createObjectStore("Persona.SetBasicBgp", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e2.createIndex("account", "account");
+
+          const e3 = db.createObjectStore("Persona.SetBasicPfa", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e3.createIndex("account", "account");
+
+          const e4 = db.createObjectStore("Persona.SetBasicMetadata", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e4.createIndex("account", "account");
+
+          const e5 = db.createObjectStore("Persona.SetAppPfp", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e5.createIndex("account", "account");
+
+          const e6 = db.createObjectStore("Persona.SetAppBgp", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e6.createIndex("account", "account");
+
+          const e7 = db.createObjectStore("Persona.SetAppPfa", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e7.createIndex("account", "account");
+
+          const e8 = db.createObjectStore("Persona.SetAppMetadata", {
+            keyPath: ["blockNumber", "logIndex"],
+          });
+
+          e8.createIndex("account", "account");
+
+          const o1 = db.createObjectStore("Account", {
+            keyPath: "address",
+          });
+        }
       },
     });
 
@@ -247,7 +390,7 @@ export class EventDB {
     values: StoreValue<Schema, Store>[]
   ) {
     console.debug("Put batch", store, values);
-    const tx = this.db.transaction(store, "readwrite");
+    const tx = this._db.transaction(store, "readwrite");
     await Promise.all([...values.map((obj) => tx.store.put(obj)), tx.done]);
   }
 
@@ -257,7 +400,7 @@ export class EventDB {
     key?: IDBKeyRange | Schema[Store]["key"]
   ) {
     console.debug("Put", store, value);
-    await this.db.put(store, value, key);
+    await this._db.put(store, value, key);
   }
 
   /**
@@ -322,7 +465,7 @@ export class EventDB {
           mappedEvents.map((e) => eventIter?.(e))
         );
 
-        const tx = this.db.transaction(txStores, "readwrite");
+        const tx = this._db.transaction(txStores, "readwrite");
         let latestFetchedBlock =
           (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
           parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
@@ -331,6 +474,7 @@ export class EventDB {
         if (latestFetchedBlock <= e.blockNumber) {
           try {
             for (let i = 0; i < mappedEvents.length; i++) {
+              console.debug("Put event", mappedEvents[i]);
               try {
                 await tx.objectStore(eventStore).add(mappedEvents[i]);
                 if (txEventIter)
@@ -372,7 +516,7 @@ export class EventDB {
     query: IndexKey<Schema, Store, IndexName> | IDBKeyRange | null,
     direction: IDBCursorDirection | undefined
   ): Promise<StoreValue<Schema, Store> | undefined> {
-    const tx = this.db.transaction(eventStore);
+    const tx = this._db.transaction(eventStore);
     const _index = tx.objectStore(eventStore).index(index);
     let cursor = await _index.openCursor(query, direction);
     return cursor?.value;
@@ -392,7 +536,7 @@ export class EventDB {
     direction: IDBCursorDirection | undefined,
     callback: (value: StoreValue<Schema, Store>) => void
   ): Promise<void> {
-    const tx = this.db.transaction(eventStore);
+    const tx = this._db.transaction(eventStore);
     const _index = tx.objectStore(eventStore).index(index);
     let cursor = await _index.openCursor(query, direction);
 
@@ -434,42 +578,42 @@ export class EventDB {
     ) => Promise<void>
   ) {
     let fromBlock =
-      (await this.db.get("latestFetchedEventBlock", eventStore)) ||
+      (await this._db.get("latestFetchedEventBlock", eventStore)) ||
       parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
       0;
 
     while (fromBlock < finalBlock) {
       const toBlock = Math.min(finalBlock, fromBlock + SYNC_BLOCK_BATCH_SIZE);
+
+      console.debug("Querying events", eventStore, fromBlock, toBlock);
       const rawEvents = await contract.queryFilter(filter, fromBlock, toBlock);
 
-      if (rawEvents.length > 0) {
-        const mappedEvents = rawEvents.flatMap(rawEventMap);
-        const iterResults = await Promise.all(
-          mappedEvents.map((e) => eventIter?.(e))
-        );
+      const mappedEvents = rawEvents.flatMap(rawEventMap);
+      const iterResults = await Promise.all(
+        mappedEvents.map((e) => eventIter?.(e))
+      );
 
-        const tx = this.db.transaction(txStores, "readwrite");
-        let latestBlock =
-          (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
-          parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
-          0;
+      const tx = this._db.transaction(txStores, "readwrite");
+      let latestBlock =
+        (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
+        parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
+        0;
 
-        if (latestBlock <= fromBlock) {
-          if (mappedEvents.length > 0) {
-            for (let i = 0; i < mappedEvents.length; i++) {
-              await tx.objectStore(eventStore).put(mappedEvents[i]);
+      if (latestBlock <= fromBlock) {
+        if (mappedEvents.length > 0) {
+          for (let i = 0; i < mappedEvents.length; i++) {
+            await tx.objectStore(eventStore).put(mappedEvents[i]);
 
-              if (txEventIter)
-                await txEventIter(tx, mappedEvents[i], iterResults[i]);
-            }
+            if (txEventIter)
+              await txEventIter(tx, mappedEvents[i], iterResults[i]);
           }
-
-          await tx
-            .objectStore("latestFetchedEventBlock")
-            .put(toBlock, eventStore);
-
-          tx.commit();
         }
+
+        await tx
+          .objectStore("latestFetchedEventBlock")
+          .put(toBlock, eventStore);
+
+        tx.commit();
       }
 
       fromBlock = toBlock + 1;
