@@ -1,10 +1,10 @@
 import { BigNumber } from "@ethersproject/bignumber";
-import Account from "../Account";
+import Model from "@/models/Account";
 
 /**
  * A generic NFT.
  */
 export type NFT = {
-  contract: Account;
+  contract: Model;
   id: BigNumber;
 };

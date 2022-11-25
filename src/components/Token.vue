@@ -206,7 +206,7 @@ async function setPfp() {
           Placeholder.h-4.w-full(:animate="animatePlaceholder")
 
       // Mint data
-      p.leading-tight.text-xs.text-base-content.text-opacity-75.whitespace-normal(
+      .leading-tight.text-xs.text-base-content.text-opacity-75.whitespace-normal(
         v-if="kind === Kind.Full || kind === Kind.Card"
       )
         span.align-middle &copy;&nbsp;
@@ -215,29 +215,29 @@ async function setPfp() {
           :account="token.ipnft721Minter"
           pfp-class="bg-base-100"
         )
-        Placeholder.inline-block.h-5.w-full(
+        Placeholder.inline-block.h-3.w-8.align-middle(
           v-else
           :animate="animatePlaceholder"
         )
 
-        span &nbsp;⋅&nbsp;
+        span.align-middle &nbsp;⋅&nbsp;
         template(v-if="token.ipnft721MintedAt") 
-          span minted&nbsp;
-          span(:title="token.ipnft721MintedAt.toLocaleString()") {{ formatDistance(token.ipnft721MintedAt, new Date(), { addSuffix: true }) }}
-        Placeholder.inline-block.h-5.w-full(
+          span.align-middle minted&nbsp;
+          span.align-middle(:title="token.ipnft721MintedAt.toLocaleString()") {{ formatDistance(token.ipnft721MintedAt, new Date(), { addSuffix: true }) }}
+        Placeholder.inline-block.h-3.w-8.align-middle(
           v-else
           :animate="animatePlaceholder"
         )
 
-        span &nbsp;⋅&nbsp;
-        span(v-if="token.ipnft1155TotalSupply") {{ token.ipnft1155TotalSupply }} edition{{ token.ipnft1155TotalSupply.gt(1) || token.ipnft1155TotalSupply.eq(0) ? "s" : "" }}
-        Placeholder.inline-block.h-5.w-full(
+        span.align-middle &nbsp;⋅&nbsp;
+        span.align-middle(v-if="token.ipnft1155TotalSupply") {{ token.ipnft1155TotalSupply }} edition{{ token.ipnft1155TotalSupply.gt(1) || token.ipnft1155TotalSupply.eq(0) ? "s" : "" }}
+        Placeholder.inline-block.h-3.w-8.align-middle(
           v-else
           :animate="animatePlaceholder"
         )
 
-        span &nbsp;⋅&nbsp;
-        span {{ ((token.ipnft721Royalty || 0) * 100).toFixed(1) }}% royalty
+        span.align-middle &nbsp;⋅&nbsp;
+        span.align-middle {{ ((token.ipnft721Royalty || 0) * 100).toFixed(1) }}% royalty
 
     slot
 </template>

@@ -19,9 +19,9 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center
         router-link.bbtn(to="/mint") 
           span ✨
         router-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
-          :to="'/' + account.toString()"
+          :to="'/' + account.address.value?.toString()"
         )
-          span.text-sm.lowercase {{ account.trimmed }}
+          code.text-sm.lowercase {{ account.address.value?.display }}
           PFP.bg-base-200.cursor-pointer.h-full(
             :account="account"
             mask="squircle"

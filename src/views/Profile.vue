@@ -1,11 +1,12 @@
 <script lang="ts">
 import eventDb from "@/services/eth/event-db";
+import { copyToClipboard, notNull } from "@/util";
 
 export async function fetchPfa(account: string): Promise<string | undefined> {
   const accountObj = await eventDb.db.get("Account", account);
 
   return (
-    accountObj?.personas.apps[eth.app.address]?.pfa ||
+    accountObj?.personas.apps[eth.app.toString()]?.pfa ||
     accountObj?.personas.basic?.pfa
   );
 }
@@ -13,7 +14,7 @@ export async function fetchPfa(account: string): Promise<string | undefined> {
 
 <script setup lang="ts">
 import PFP from "@/components/shared/PFP.vue";
-import Account from "@/services/eth/Account";
+import Model from "@/models/Account";
 import { computed, onMounted, type Ref, ref, type ShallowRef } from "vue";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
 import TokenModal from "@/components/modals/Token.vue";
@@ -22,9 +23,13 @@ import edb from "@/services/eth/event-db";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import { BigNumber } from "@ethersproject/bignumber";
 import * as eth from "@/services/eth";
-import { PencilSquareIcon, BoltIcon } from "@heroicons/vue/24/outline";
+import {
+  PencilSquareIcon,
+  BoltIcon,
+  DocumentDuplicateIcon,
+} from "@heroicons/vue/24/outline";
 
-const props = defineProps<{ account: Account }>();
+const props = defineProps<{ account: Model }>();
 const tokens: ShallowRef<IPNFTModel[]> = ref([]);
 const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
 const pfa: Ref<string | undefined> = ref();
@@ -41,11 +46,13 @@ const collectibles = computed(() =>
 
 const maySetPfa = computed(() => eth.account.value?.equals(props.account));
 
-onMounted(() => {
+onMounted(async () => {
+  await props.account.resolve();
+
   edb.iterateEventsIndex(
     "IPNFT",
     "currentOwner",
-    props.account.address,
+    props.account.address.value!.toString(),
     "prev",
     (t) => {
       const token = getOrCreateIPNFT(IPNFT.uint256ToCID(BigNumber.from(t.id)));
@@ -55,7 +62,7 @@ onMounted(() => {
     }
   );
 
-  fetchPfa(props.account.address).then((_pfa) => {
+  fetchPfa(props.account.address.value!.toString()).then((_pfa) => {
     pfa.value = _pfa;
   });
 });
@@ -71,9 +78,15 @@ async function setPfa() {
 .w-full.flex.justify-center.p-4
   .w-full.max-w-3xl.flex.flex-col.gap-2
     h2.font-bold.text-lg Profile 🙂
-    .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-2
-      PFP.h-32.w-32.bg-base-200(:account="account" mask="squircle")
-      h2.text-lg.leading-none {{ account }}
+    .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-1
+      PFP.h-32.w-32.bg-base-200.mb-2(:account="account")
+
+      code.daisy-badge.daisy-badge-primary(v-if="account.ensName.value") {{ account.ensName.value }}
+      .flex.gap-1.leading-none(v-if="account.address.value")
+        code.text-sm.text-base-content.text-opacity-75 {{ account.address.value.display }}
+        DocumentDuplicateIcon.h-4.w-4.cursor-pointer.text-base-content.text-opacity-40(
+          @click="copyToClipboard(notNull(account.address.value).toString())"
+        )
 
       //- PFA
       template(v-if="isChangingPfa")
@@ -96,7 +109,7 @@ async function setPfa() {
         .flex.gap-1
           p(v-if="pfa") {{ pfa }}
           p.text-base-content.text-opacity-50.italic(v-else) No PFA set
-          PencilSquareIcon.h-5.w-5.cursor-pointer.text-base-content.text-opacity-40.transition-transform.transition-colors.hover_scale-105.hover_text-primary.hover_text-opacity-100(
+          PencilSquareIcon.h-4.w-4.cursor-pointer.text-base-content.text-opacity-40.transition-transform.transition-colors.hover_scale-105.hover_text-primary.hover_text-opacity-100(
             v-if="maySetPfa"
             @click="pfaEphemeral = pfa || ''; isChangingPfa = true"
           )

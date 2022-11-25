@@ -20,7 +20,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
   const accountObj = await eventDb.db.get("Account", account);
 
   const pfp =
-    accountObj?.personas.apps[eth.app.address]?.pfp ||
+    accountObj?.personas.apps[eth.app.toString()]?.pfp ||
     accountObj?.personas.basic?.pfp;
 
   if (pfp) {
@@ -36,7 +36,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
       rawTokenURI = (
         await erc721.tokenURI(
           new IERC721Token(
-            new Account(pfp.contractAddress),
+            Account.getOrCreateFromAddress(pfp.contractAddress),
             BigNumber.from(pfp.tokenId)
           )
         )
@@ -52,7 +52,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
       rawTokenURI = (
         await nft.uri(
           new IERC721Token(
-            new Account(pfp.contractAddress),
+            Account.getOrCreateFromAddress(pfp.contractAddress),
             BigNumber.from(pfp.tokenId)
           )
         )
@@ -74,7 +74,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
 </script>
 
 <script setup lang="ts">
-import Account from "@/services/eth/Account";
+import * as Account from "@/models/Account";
 import eventDb from "@/services/eth/event-db";
 import * as jdenticon from "jdenticon";
 import { type Ref, ref, onMounted } from "vue";
@@ -86,12 +86,12 @@ import IERC721Metadata from "@/services/eth/contract/IERC721Metadata";
 import * as IPFS from "@/services/ipfs";
 import IERC1155MetadataURI from "@/services/eth/contract/IERC1155MetadataURI";
 
-const props = defineProps<{ account: Account }>();
+const props = defineProps<{ account: Account.default }>();
 const img: Ref<URL | undefined> = ref();
 const svgRef: Ref<SVGElement | null> = ref(null);
 
 function updateSvg() {
-  jdenticon.updateSvg(svgRef.value!, props.account.toString());
+  jdenticon.updateSvg(svgRef.value!, props.account.address.value?.toString());
 }
 
 onMounted(() => {

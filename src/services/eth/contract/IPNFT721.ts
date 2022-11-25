@@ -3,7 +3,7 @@ import { Ipnft721 as BaseType } from "@/../lib/ipnft/waffle/types/Ipnft721";
 import { abi } from "@/../lib/ipnft/waffle/IPNFT721.json";
 import { ContractTransaction, Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import Account from "../Account";
+import Model from "@/models/Account";
 import { indexOfMulti, Uint8 } from "@/util";
 import { Buffer } from "buffer";
 import { EventDB } from "../event-db";
@@ -13,12 +13,14 @@ import * as Block from "multiformats/block";
 import { AddressZero } from "@ethersproject/constants";
 
 export default class IPNFT721 {
-  static readonly account = new Account(import.meta.env.VITE_IPNFT721_ADDRESS);
+  static readonly account = Model.fromAddress(
+    import.meta.env.VITE_IPNFT721_ADDRESS
+  );
   private readonly _contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
     this._contract = new BaseType(
-      IPNFT721.account.address,
+      IPNFT721.account.address.value!.toString(),
       abi,
       providerOrSigner
     );
@@ -29,7 +31,7 @@ export default class IPNFT721 {
   }
 
   async mint(
-    to: Account,
+    to: Model,
     content: Block.Block<unknown>,
     tag: IPNFT.Tag,
     royalty: Uint8
@@ -48,26 +50,26 @@ export default class IPNFT721 {
     );
   }
 
-  async minterNonce(minter: Account): Promise<number> {
+  async minterNonce(minter: Model): Promise<number> {
     return await this._contract.minterNonce(minter.toString());
   }
 
-  async isApprovedForAll(owner: Account, operator: Account): Promise<boolean> {
+  async isApprovedForAll(owner: Model, operator: Model): Promise<boolean> {
     return await this._contract.isApprovedForAll(
       owner.toString(),
       operator.toString()
     );
   }
 
-  async setApprovalForAll(operator: Account, approved: boolean) {
+  async setApprovalForAll(operator: Model, approved: boolean) {
     return await this._contract.setApprovalForAll(
       operator.toString(),
       approved
     );
   }
 
-  async ownerOf(token: IPNFT.Token): Promise<Account> {
-    return new Account(await this._contract.ownerOf(token.id));
+  async ownerOf(token: IPNFT.Token): Promise<Model> {
+    return Model.fromAddress(await this._contract.ownerOf(token.id));
   }
 
   async tokenUri(token: IPNFT.Token): Promise<URL> {

@@ -1,18 +1,19 @@
 import { ethers } from "ethers";
 import { ref, ShallowRef } from "vue";
-import Account from "./eth/Account";
+import * as Account from "@/models/Account";
 import IPNFT721 from "./eth/contract/IPNFT721";
 import IPNFT1155 from "./eth/contract/IPNFT1155";
 import MetaStore from "./eth/contract/MetaStore";
 import Persona from "./eth/contract/Persona";
 import edb from "./eth/event-db";
+import { Address } from "./eth/Address";
 
 const PROVIDER_KEY = "eth.wallet.provider";
 
 export const provider = ref<ethers.providers.Web3Provider | undefined>();
-export const account: ShallowRef<Account | undefined> = ref();
+export const account: ShallowRef<Account.default | undefined> = ref();
 
-export const app = new Account(import.meta.env.VITE_APP_ADDRESS);
+export const app = new Address(import.meta.env.VITE_APP_ADDRESS);
 
 export let ipnft721: IPNFT721;
 export let ipnft1155: IPNFT1155;
@@ -36,7 +37,10 @@ export async function login() {
   if (!window.ethereum.selectedAddress)
     throw "Did not select an Ethereum address";
 
-  account.value = new Account(window.ethereum.selectedAddress);
+  account.value = Account.getOrCreateFromAddress(
+    window.ethereum.selectedAddress
+  );
+  account.value.resolve();
 
   // TODO: Detect network change.
   // See https://docs.ethers.io/v5/concepts/best-practices/
@@ -52,8 +56,8 @@ export async function login() {
 
     ipnft721.sync(edb, untilBlock);
     ipnft1155.sync(edb, untilBlock);
-    metaStore.sync(edb, app.address, untilBlock);
-    persona.sync(edb, untilBlock, app.address);
+    metaStore.sync(edb, untilBlock);
+    persona.sync(edb, untilBlock, app);
   });
 
   fireOnConnectCallbacks();

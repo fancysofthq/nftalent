@@ -23,6 +23,10 @@ export class Uint8 {
   }
 }
 
+export async function copyToClipboard(value: string): Promise<void> {
+  return navigator.clipboard.writeText(value);
+}
+
 /**
  * Search for a multi-byte `pattern` in `bytes`.
  */

@@ -147,10 +147,10 @@ const tokenModel: ComputedRef<IPNFTModel> = computed(() => {
     ),
     {
       metadata: ref(metadata.value),
-      ipnft721Minter: ref(eth.account.value),
+      ipnft721Minter: eth.account,
       ipnft721MintedAt: ref(now),
       ipnft721Royalty: ref(royalty.value / 255),
-      ipnft721CurrentOwner: ref(eth.account.value),
+      ipnft721CurrentOwner: eth.account,
       ipnft1155Balance: ref(BigNumber.from(0)),
       ipnft1155TotalSupply: ref(BigNumber.from(editions.value || 0)),
       ipnft1155Finalized: ref(false),
@@ -477,11 +477,7 @@ async function mint1155(
     amount,
     finalize,
     expiredAt,
-    new ListingConfig(
-      eth.account.value!.address,
-      eth.app.address,
-      price
-    ).toBytes()
+    new ListingConfig(eth.account.value!, eth.app, price).toBytes()
   );
 }
 
@@ -578,8 +574,8 @@ async function uploadToIpfs(
 
   const ipnftTag = new IPNFT.Tag(
     (await eth.provider.value!.getNetwork()).chainId,
-    IPNFT721.account.address,
-    eth.account.value!.address,
+    IPNFT721.account.address.value!,
+    eth.account.value!.address.value!,
     await eth.ipnft721.minterNonce(eth.account.value!)
   );
 

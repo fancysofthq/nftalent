@@ -1,13 +1,14 @@
 <script setup lang="ts">
 interface Props {
   animate?: boolean;
+  rounded?: boolean;
 }
 
-const { animate = true } = defineProps<Props>();
+const { animate = true, rounded = true } = defineProps<Props>();
 </script>
 
 <template lang="pug">
-.content-placeholder-wrapper 
+.content-placeholder-wrapper(:class="{ rounded: rounded }")
   div(:class="{ 'content-placeholder-activity': animate }")
 </template>
 
@@ -15,7 +16,6 @@ const { animate = true } = defineProps<Props>();
 .content-placeholder-wrapper {
   position: relative;
   background-color: rgb(211, 211, 211);
-  z-index: 44;
   overflow: hidden;
 }
 
@@ -49,7 +49,6 @@ const { animate = true } = defineProps<Props>();
     rgba(251, 251, 251, 0.05)
   );
   animation: content-placeholder-loading 1s infinite;
-  z-index: 45;
 }
 
 @keyframes content-placeholder-loading {

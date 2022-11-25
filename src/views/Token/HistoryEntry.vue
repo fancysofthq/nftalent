@@ -2,7 +2,7 @@
 import { BigNumber, ethers } from "ethers";
 import { computed, type ComputedRef, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
-import Account from "@/services/eth/Account";
+import * as Account from "@/models/Account";
 import IPNFTModel from "@/models/IPNFT";
 import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./History.vue";
@@ -100,7 +100,7 @@ const eventTarget: ComputedRef<string | undefined> = computed(() => {
     span.text-xl {{ eventEmoji }}
     Chip.h-5.bg-base-200(
       v-if="eventActor"
-      :account="new Account(eventActor)"
+      :account="Account.getOrCreateFromAddress(eventActor)"
       pfp-class="bg-base-100"
     )
     span {{ eventName }}
@@ -110,7 +110,7 @@ const eventTarget: ComputedRef<string | undefined> = computed(() => {
     template(v-if="eventTarget")
       span to
       Chip.h-5.bg-base-200(
-        :account="new Account(eventTarget)"
+        :account="Account.getOrCreateFromAddress(eventTarget)"
         pfp-class="bg-base-100"
       )
 

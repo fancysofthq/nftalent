@@ -9,6 +9,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import IPNFT721 from "./IPNFT721";
 import IPNFT1155 from "./IPNFT1155";
 import { Buffer } from "buffer";
+import { Address } from "../Address";
 
 export class Token {
   cid: CID;
@@ -46,22 +47,14 @@ export function uint256ToCID(id: BigNumber): CID {
 }
 
 export class Tag {
-  readonly chainId: number;
-  readonly contractAddress: string;
-  readonly minterAddress: string;
-  readonly minterNonce: number;
   readonly bytes: Uint8Array;
 
   constructor(
-    chainId: number,
-    contractAddress: string,
-    minterAddress: string,
-    minterNonce: number
+    readonly chainId: number,
+    readonly contractAddress: Address,
+    readonly minterAddress: Address,
+    readonly minterNonce: number
   ) {
-    this.chainId = chainId;
-    this.contractAddress = contractAddress;
-    this.minterAddress = minterAddress;
-    this.minterNonce = minterNonce;
     this.bytes = this.toBytes();
   }
 
@@ -70,8 +63,10 @@ export class Tag {
 
     tag.writeUint32BE(0x65766d01);
     tag.write(this.chainId.toString(16).padStart(64, "0"), 4, 32, "hex");
-    tag.write(this.contractAddress.slice(2), 36, 20, "hex");
-    tag.write(this.minterAddress.slice(2), 56, 20, "hex");
+    // OPTIMIZE: Use buffer directly.
+    tag.write(this.contractAddress.toString().slice(2), 36, 20, "hex");
+    // OPTIMIZE: Ditto.
+    tag.write(this.minterAddress.toString().slice(2), 56, 20, "hex");
     tag.writeUInt32BE(this.minterNonce, 76);
 
     return new Uint8Array(tag);

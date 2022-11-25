@@ -9,55 +9,52 @@ import {
   Signer,
 } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import Account from "../Account";
+import Model from "@/models/Account";
 import { Token as ERC1155Token } from "./IERC1155";
 import { EventDB } from "../event-db";
 import { app } from "../../eth";
 import { EventBase } from "./common";
 import { type NFT } from "./NFT";
 import IPNFT1155 from "./IPNFT1155";
+import { Address } from "../Address";
 
 export class ListingConfig {
-  seller: string;
-  app: string;
-  price: BigNumberish;
-
-  constructor(seller: string, app: string, price: BigNumberish) {
-    this.seller = seller;
-    this.app = app;
-    this.price = price;
-  }
+  constructor(
+    readonly seller: Model,
+    readonly app: Address,
+    readonly price: BigNumberish
+  ) {}
 
   toBytes(): BytesLike {
     return ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "uint256"],
-      [this.seller, this.app, this.price]
+      [this.seller.address.value!.toString(), this.app.toString(), this.price]
     );
   }
 }
 
 export class Listing {
-  static id(token: NFT, seller: Account): BytesLike {
+  static id(token: NFT, seller: Model): BytesLike {
     return ethers.utils.keccak256(
       ethers.utils.defaultAbiCoder.encode(
         ["address", "uint256", "address", "address"],
-        [token.contract.address, token.id, seller.address, app.address]
+        [token.contract.address, token.id, seller.address, app]
       )
     );
   }
 
-  static idHex(token: NFT, seller: Account): string {
+  static idHex(token: NFT, seller: Model): string {
     return ethers.utils.hexlify(Listing.id(token, seller));
   }
 
   static fromRawEvent(e: any): Listing {
     return new Listing({
       token: new ERC1155Token(
-        new Account(e.args!.token.contract_ as string),
+        Model.fromAddress(e.args!.token.contract_ as string),
         e.args!.token.id as BigNumber
       ),
-      seller: new Account(e.args!.seller as string),
-      app,
+      seller: Model.fromAddress(e.args!.seller as string),
+      app: Model.fromAddress(e.args!.app as string),
       price: e.args!.price as BigNumber,
       stockSize: e.args!.stockSize as BigNumber,
       blockNumber: e.blockNumber as number,
@@ -70,8 +67,8 @@ export class Listing {
         contract: IPNFT1155.account,
         id: BigNumber.from(e.token.id),
       },
-      seller: new Account(e.seller),
-      app: app,
+      seller: Model.fromAddress(e.seller),
+      app: Model.fromAddress(app),
       price: BigNumber.from(0),
       stockSize: BigNumber.from(0),
       blockNumber: e.blockNumber,
@@ -80,8 +77,8 @@ export class Listing {
 
   id: BytesLike;
   token: NFT;
-  seller: Account;
-  app: Account;
+  seller: Model;
+  app: Model;
   price: BigNumber;
   stockSize: BigNumber;
 
@@ -99,8 +96,8 @@ export class Listing {
   }: {
     id?: BytesLike;
     token: NFT;
-    seller: Account;
-    app: Account;
+    seller: Model;
+    app: Model;
     price: BigNumber;
     stockSize: BigNumber;
     blockNumber?: number;
@@ -222,7 +219,7 @@ export type Purchase = EventBase & {
 };
 
 export default class MetaStore {
-  static readonly account = new Account(
+  static readonly account = Model.fromAddress(
     import.meta.env.VITE_META_STORE_ADDRESS
   );
 
@@ -230,27 +227,27 @@ export default class MetaStore {
 
   constructor(providerOrSigner: Provider | Signer) {
     this.contract = new BaseType(
-      MetaStore.account.address,
+      MetaStore.account.address.value!.toString(),
       abi,
       providerOrSigner
     );
   }
 
-  sync(edb: EventDB, appAddress: string, untilBlock: number) {
-    this._syncList(edb, appAddress, untilBlock);
-    this._syncReplenish(edb, appAddress, untilBlock);
-    this._syncWithdraw(edb, appAddress, untilBlock);
-    this._syncPurchase(edb, appAddress, untilBlock);
+  sync(edb: EventDB, untilBlock: number) {
+    this._syncList(edb, untilBlock);
+    this._syncReplenish(edb, untilBlock);
+    this._syncWithdraw(edb, untilBlock);
+    this._syncPurchase(edb, untilBlock);
   }
 
   /**
    * Fetch listings by account. It'd include initial price and stock size.
    */
-  async listingsByAccount(account: Account): Promise<Listing[]> {
+  async listingsByAccount(account: Model): Promise<Listing[]> {
     const filter = this.contract.filters.List(
       null,
-      account.address,
-      app.address
+      account.address.value!.toString(),
+      app.toString()
     );
 
     return (await this.contract.queryFilter(filter))
@@ -267,31 +264,34 @@ export default class MetaStore {
 
     return new Listing({
       token: new ERC1155Token(
-        new Account(listing.token.contract_),
+        Model.fromAddress(listing.token.contract_),
         listing.token.id
       ),
-      seller: new Account(listing.seller),
-      app: new Account(listing.app),
+      seller: Model.fromAddress(listing.seller),
+      app: Model.fromAddress(listing.app),
       price: listing.price,
       stockSize: listing.stockSize,
     });
   }
 
   async appEnabled(): Promise<boolean> {
-    return this.contract.isAppEnabled(app.address);
+    return this.contract.isAppEnabled(app.toString());
   }
 
   async appActive(): Promise<boolean> {
-    return this.contract.isAppActive(app.address);
+    return this.contract.isAppActive(app.toString());
   }
 
-  async sellerApproved(seller: Account): Promise<boolean> {
-    return this.contract.isSellerApproved(app.address, seller.address);
+  async sellerApproved(seller: Model): Promise<boolean> {
+    return this.contract.isSellerApproved(
+      app.toString(),
+      seller.address.value!.toString()
+    );
   }
 
   async findPrimaryListing(token: NFT): Promise<Listing | undefined> {
     const listingId = await this.contract.primaryListingId(
-      app.address,
+      app.toString(),
       token.contract.toString(),
       token.id
     );
@@ -318,17 +318,13 @@ export default class MetaStore {
     return await this.contract.purchase(listingId, amount, { value });
   }
 
-  private async _syncList(
-    edb: EventDB,
-    appAddress: string,
-    untilBlock: number
-  ) {
+  private async _syncList(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "MetaStore.List",
       ["MetaStore.List", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
-      this.contract.filters.List(null, null, appAddress),
+      this.contract.filters.List(null, null, app.toString()),
       (e: ethers.Event): List[] => [
         {
           transactionHash: e.transactionHash,
@@ -339,27 +335,23 @@ export default class MetaStore {
           seller: (e.args!.seller as string).toLowerCase(),
           listingId: Listing.idHex(
             new ERC1155Token(
-              new Account(e.args!.token.contract_),
+              Model.fromAddress(e.args!.token.contract_),
               e.args!.token.id
             ),
-            new Account(e.args!.seller as string)
+            Model.fromAddress(e.args!.seller as string)
           ),
         },
       ]
     );
   }
 
-  private async _syncReplenish(
-    edb: EventDB,
-    appAddress: string,
-    untilBlock: number
-  ) {
+  private async _syncReplenish(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "MetaStore.Replenish",
       ["MetaStore.Replenish", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
-      this.contract.filters.Replenish(null, appAddress, null, null, null),
+      this.contract.filters.Replenish(null, app.toString(), null, null, null),
       (e: ethers.Event): Replenish[] => [
         {
           transactionHash: e.transactionHash,
@@ -377,17 +369,13 @@ export default class MetaStore {
     );
   }
 
-  private async _syncWithdraw(
-    edb: EventDB,
-    appAddress: string,
-    untilBlock: number
-  ) {
+  private async _syncWithdraw(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "MetaStore.Withdraw",
       ["MetaStore.Withdraw", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
-      this.contract.filters.Withdraw(null, appAddress, null, null, null),
+      this.contract.filters.Withdraw(null, app.toString(), null, null, null),
       (e: ethers.Event): Withdraw[] => [
         {
           transactionHash: e.transactionHash,
@@ -405,7 +393,7 @@ export default class MetaStore {
     );
   }
 
-  private _syncPurchase(edb: EventDB, appAddress: string, untilBlock: number) {
+  private _syncPurchase(edb: EventDB, untilBlock: number) {
     edb.syncEvents(
       "MetaStore.Purchase",
       ["MetaStore.Purchase", "latestFetchedEventBlock"],
@@ -419,7 +407,7 @@ export default class MetaStore {
         null,
         null,
         null,
-        appAddress,
+        app.toString(),
         null,
         null,
         null

@@ -3,11 +3,12 @@ import { Persona as BaseType } from "@/../lib/meta/waffle/types/Persona";
 import { abi } from "@/../lib/meta/waffle/Persona.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import AccountModel from "../Account";
+import Model from "@/models/Account";
 import { EventDB, Account as DbAccount } from "../event-db";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
 import { invalidatePfpCache } from "@/components/shared/PFP.vue";
+import { Address } from "../Address";
 
 export type SetBasicPfp = EventBase & {
   account: string;
@@ -58,20 +59,20 @@ export type SetAppMetadata = EventBase & {
 };
 
 export default class Persona {
-  static readonly account = new AccountModel(
+  static readonly account = Model.fromAddress(
     import.meta.env.VITE_PERSONA_ADDRESS
   );
   private readonly _contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
     this._contract = new BaseType(
-      Persona.account.address,
+      Persona.account.address.value!.toString(),
       abi,
       providerOrSigner
     );
   }
 
-  sync(edb: EventDB, untilBlock: number, app: string) {
+  sync(edb: EventDB, untilBlock: number, app: Address) {
     this._syncBasicPfp(edb, untilBlock);
     this._syncBasicBgp(edb, untilBlock);
     this._syncBasicPfa(edb, untilBlock);
@@ -83,7 +84,10 @@ export default class Persona {
   }
 
   async setPfp(token: NFT) {
-    return this._contract.setBasicPfp(token.contract.address, token.id);
+    return this._contract.setBasicPfp(
+      token.contract.address.value!.toString(),
+      token.id
+    );
   }
 
   async setPfa(pfa: string) {
@@ -231,13 +235,13 @@ export default class Persona {
     );
   }
 
-  private async _syncAppPfp(edb: EventDB, untilBlock: number, app: string) {
+  private async _syncAppPfp(edb: EventDB, untilBlock: number, app: Address) {
     await edb.syncEvents(
       "Persona.SetAppPfp",
       ["Persona.SetAppPfp", "latestFetchedEventBlock", "Account"],
       untilBlock,
       this._contract,
-      this._contract.filters.SetAppPfp(null, app, null, null),
+      this._contract.filters.SetAppPfp(null, app.toString(), null, null),
       (e: ethers.Event): SetAppPfp[] => [
         {
           transactionHash: e.transactionHash,
@@ -259,7 +263,7 @@ export default class Persona {
           personas: { apps: {} },
         } as DbAccount;
 
-        (account.personas.apps[app] ||= {}).pfp = {
+        (account.personas.apps[app.toString()] ||= {}).pfp = {
           contractAddress: e.contractAddress,
           tokenId: e.tokenId,
         };
@@ -269,13 +273,13 @@ export default class Persona {
     );
   }
 
-  private async _syncAppBgp(edb: EventDB, untilBlock: number, app: string) {
+  private async _syncAppBgp(edb: EventDB, untilBlock: number, app: Address) {
     await edb.syncEvents(
       "Persona.SetAppBgp",
       ["Persona.SetAppBgp", "latestFetchedEventBlock", "Account"],
       untilBlock,
       this._contract,
-      this._contract.filters.SetAppBgp(null, app, null, null),
+      this._contract.filters.SetAppBgp(null, app.toString(), null, null),
       (e: ethers.Event): SetAppBgp[] => [
         {
           transactionHash: e.transactionHash,
@@ -297,7 +301,7 @@ export default class Persona {
           personas: { apps: {} },
         } as DbAccount;
 
-        (account.personas.apps[app] ||= {}).bgp = {
+        (account.personas.apps[app.toString()] ||= {}).bgp = {
           contractAddress: e.contractAddress,
           tokenId: e.tokenId,
         };
@@ -308,13 +312,13 @@ export default class Persona {
     );
   }
 
-  private async _syncAppPfa(edb: EventDB, untilBlock: number, app: string) {
+  private async _syncAppPfa(edb: EventDB, untilBlock: number, app: Address) {
     await edb.syncEvents(
       "Persona.SetAppPfa",
       ["Persona.SetAppPfa", "latestFetchedEventBlock", "Account"],
       untilBlock,
       this._contract,
-      this._contract.filters.SetAppPfa(null, app, null),
+      this._contract.filters.SetAppPfa(null, app.toString(), null),
       (e: ethers.Event): SetAppPfa[] => [
         {
           transactionHash: e.transactionHash,
@@ -335,7 +339,7 @@ export default class Persona {
           personas: { apps: {} },
         } as DbAccount;
 
-        (account.personas.apps[app] ||= {}).pfa = e.pfa;
+        (account.personas.apps[app.toString()] ||= {}).pfa = e.pfa;
 
         await tx.objectStore("Account").put(account);
       }
@@ -345,14 +349,14 @@ export default class Persona {
   private async _syncAppMetadata(
     edb: EventDB,
     untilBlock: number,
-    app: string
+    app: Address
   ) {
     await edb.syncEvents(
       "Persona.SetAppMetadata",
       ["Persona.SetAppMetadata", "latestFetchedEventBlock", "Account"],
       untilBlock,
       this._contract,
-      this._contract.filters.SetAppMetadata(null, app, null),
+      this._contract.filters.SetAppMetadata(null, app.toString(), null),
       (e: ethers.Event): SetAppMetadata[] => [
         {
           transactionHash: e.transactionHash,
@@ -373,7 +377,7 @@ export default class Persona {
           personas: { apps: {} },
         } as DbAccount;
 
-        (account.personas.apps[app] ||= {}).metadata = e.metadata;
+        (account.personas.apps[app.toString()] ||= {}).metadata = e.metadata;
 
         await tx.objectStore("Account").put(account);
       }

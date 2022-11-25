@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
-import Account from "@/services/eth/Account";
+import * as Account from "@/models/Account";
 import IPNFT from "@/models/IPNFT";
 import Placeholder from "@/components/shared/Placeholder.vue";
 import Chip from "@/components/shared/Chip.vue";
@@ -60,7 +60,7 @@ const eventActor = computed(() => {
       span.text-xl {{ eventEmoji }}
       Chip.h-5.bg-base-200(
         v-if="eventActor"
-        :account="new Account(eventActor)"
+        :account="Account.getOrCreateFromAddress(eventActor)"
         pfp-class="bg-base-100"
       )
       Placeholder.h-5.w-12(v-else)
