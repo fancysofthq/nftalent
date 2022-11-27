@@ -1,6 +1,7 @@
 <script lang="ts">
 import eventDb from "@/services/eth/event-db";
 import { copyToClipboard, notNull } from "@/util";
+import { Address } from "@/services/eth/Address";
 
 export async function fetchPfa(account: string): Promise<string | undefined> {
   const accountObj = await eventDb.db.get("Account", account);
@@ -28,6 +29,7 @@ import {
   BoltIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/vue/24/outline";
+import * as api from "@/services/api";
 
 const props = defineProps<{ account: Model }>();
 const tokens: ShallowRef<IPNFTModel[]> = ref([]);
@@ -35,6 +37,9 @@ const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
 const pfa: Ref<string | undefined> = ref();
 const isChangingPfa: Ref<boolean> = ref(false);
 const pfaEphemeral: Ref<string> = ref("");
+const subscribers: ShallowRef<Address[]> = ref([]);
+const isSubscribed = ref(false);
+const subscriptions: ShallowRef<Address[]> = ref([]);
 
 const redeemables = computed(() =>
   tokens.value.filter((t) => t.ipnft1155ExpiredAt)
@@ -44,7 +49,7 @@ const collectibles = computed(() =>
   tokens.value.filter((t) => t.ipnft1155ExpiredAt === null)
 );
 
-const maySetPfa = computed(() => eth.account.value?.equals(props.account));
+const isSelf = computed(() => eth.account.value?.equals(props.account));
 
 onMounted(async () => {
   await props.account.resolve();
@@ -65,12 +70,58 @@ onMounted(async () => {
   fetchPfa(props.account.address.value!.toString()).then((_pfa) => {
     pfa.value = _pfa;
   });
+
+  fetchSubscriptions();
+  fetchSubscribers();
 });
+
+eth.onConnect(() => {
+  if (!isSelf.value) {
+    api
+      .isSubscribed(
+        eth.account.value!.address.value,
+        props.account.address.value!
+      )
+      .then((res) => {
+        isSubscribed.value = res;
+      });
+  }
+});
+
+async function fetchSubscribers() {
+  subscribers.value = await api.getSubscribers(props.account.address.value!);
+}
+
+async function fetchSubscriptions() {
+  subscriptions.value = await api.getSubscriptions(
+    props.account.address.value!
+  );
+}
 
 async function setPfa() {
   const tx = await eth.persona.setPfa(pfaEphemeral.value);
   pfa.value = pfaEphemeral.value;
   isChangingPfa.value = false;
+}
+
+async function subscribe() {
+  const tx = await api.subscribe(
+    eth.account.value!.address.value!,
+    props.account.address.value!
+  );
+
+  isSubscribed.value = true;
+  await fetchSubscribers();
+}
+
+async function unsubscribe() {
+  const tx = await api.unsubscribe(
+    eth.account.value!.address.value!,
+    props.account.address.value!
+  );
+
+  isSubscribed.value = false;
+  await fetchSubscribers();
 }
 </script>
 
@@ -110,9 +161,23 @@ async function setPfa() {
           p(v-if="pfa") {{ pfa }}
           p.text-base-content.text-opacity-50.italic(v-else) No PFA set
           PencilSquareIcon.h-4.w-4.cursor-pointer.text-base-content.text-opacity-40.transition-transform.transition-colors.hover_scale-105.hover_text-primary.hover_text-opacity-100(
-            v-if="maySetPfa"
+            v-if="isSelf"
             @click="pfaEphemeral = pfa || ''; isChangingPfa = true"
           )
+
+      .flex.justify-center
+        span {{ subscribers.length }} subscriber(s)
+        span &nbsp;⋅&nbsp;
+        span {{ subscriptions.length }} subscription(s)
+
+      template(v-if="!isSelf")
+        button.daisy-btn.daisy-btn-primary(
+          v-if="!isSubscribed"
+          @click="subscribe"
+        )
+          span.text-xl 👀
+          span Subscribe
+        button.daisy-btn(v-else @click="unsubscribe") 🚫 Unsubscribe
 
     template(v-if="redeemables.length > 0")
       h2.font-bold.text-lg Redeemables ({{ redeemables.length }}) 🎟
