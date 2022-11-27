@@ -53,7 +53,6 @@ const memoized = new Map<Address | string, Model>();
 export function getOrCreateFromAddress(
   address: Address | Uint8Array | Buffer | string
 ): Model {
-  console.debug("getOrCreateFromAddress", address);
   if (!(address instanceof Address)) address = new Address(address);
 
   if (memoized.has(address)) {
@@ -67,7 +66,6 @@ export function getOrCreateFromAddress(
 }
 
 export function getOrCreateFromEnsName(name: string): Model {
-  console.debug("getOrCreateFromEnsName", name);
   if (memoized.has(name)) {
     return memoized.get(name)!;
   }
