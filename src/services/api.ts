@@ -10,7 +10,7 @@ const nonAuthedClient = axios.create({
 });
 
 /**
- * @return {string} jwt
+ * @return {string} JWT
  */
 export async function web3Auth(client: AxiosInstance): Promise<string> {
   const signer = eth.provider.value!.getSigner();
