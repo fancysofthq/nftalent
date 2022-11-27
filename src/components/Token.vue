@@ -80,7 +80,6 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
   } else if (typeof image == "string") {
     return IPFS.processUri(new URL(image));
   } else {
-    console.debug("Image is a File", image.url?.toString());
     return image.url!;
   }
 }

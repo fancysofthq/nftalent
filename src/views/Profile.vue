@@ -190,14 +190,15 @@ async function unsubscribe() {
           @click="tokenModal = token"
         )
 
-    h2.font-bold.text-lg Collectibles ({{ collectibles.length }}) 🧸
-    .grid.grid-cols-3.gap-3
-      Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
-        v-for="token in collectibles"
-        :token="token"
-        :kind="TokenKind.Card"
-        @click="tokenModal = token"
-      )
+    template(v-if="collectibles.length > 0")
+      h2.font-bold.text-lg Collectibles ({{ collectibles.length }}) 🧸
+      .grid.grid-cols-3.gap-3
+        Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
+          v-for="token in collectibles"
+          :token="token"
+          :kind="TokenKind.Card"
+          @click="tokenModal = token"
+        )
 
 Teleport(to="body")
   TokenModal(
