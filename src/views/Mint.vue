@@ -212,7 +212,9 @@ eth.onConnect(async () => {
 <template lang="pug">
 .w-full.flex.justify-center.p-4
   .w-full.max-w-3xl.flex.flex-col.gap-2
-    h2.font-bold.text-lg ✨ Mint an IPNFT
+    h2.flex.items-baseline.gap-2
+      span.font-bold.text-lg 🌱 Mint
+      span.text-base-content.text-opacity-75.text-sm Create a new token
     form.daisy-form-control.max-w-3xl.w-full.border.divide-y.rounded-lg
       .p-4
         .daisy-alert.daisy-alert-error(v-if="!web3StorageApiKey")

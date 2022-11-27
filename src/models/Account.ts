@@ -51,7 +51,8 @@ export default class Model {
 const memoized = new Map<Address | string, Model>();
 
 export function getOrCreateFromAddress(
-  address: Address | Uint8Array | Buffer | string
+  address: Address | Uint8Array | Buffer | string,
+  resolve = false
 ): Model {
   if (!(address instanceof Address)) address = new Address(address);
 
@@ -62,10 +63,11 @@ export function getOrCreateFromAddress(
   const token = markRaw(Model.fromAddress(address));
   memoized.set(address, token);
 
+  if (resolve) token.resolve();
   return token;
 }
 
-export function getOrCreateFromEnsName(name: string): Model {
+export function getOrCreateFromEnsName(name: string, resolve = false): Model {
   if (memoized.has(name)) {
     return memoized.get(name)!;
   }
@@ -73,5 +75,6 @@ export function getOrCreateFromEnsName(name: string): Model {
   const token = markRaw(Model.fromENSName(name));
   memoized.set(name, token);
 
+  if (resolve) token.resolve();
   return token;
 }

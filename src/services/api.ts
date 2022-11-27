@@ -5,7 +5,7 @@ import { Address } from "./eth/Address";
 
 const JWT_KEY = "api.jwt";
 
-const client = axios.create({
+const nonAuthedClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
@@ -74,7 +74,7 @@ export async function isSubscribed(
   if (!from && !to) throw new Error("Must provide from or to");
   console.debug(from, to);
 
-  const response = await client.get("/v1/subscriptions/", {
+  const response = await nonAuthedClient.get("/v1/subscriptions/", {
     params: {
       from: from?.toString(),
       to: to?.toString(),
@@ -104,7 +104,7 @@ export async function unsubscribe(
 
 export async function getSubscribers(address: Address): Promise<Address[]> {
   return (
-    await client.get("/v1/subscriptions/", {
+    await nonAuthedClient.get("/v1/subscriptions/", {
       params: {
         to: address.toString(),
       },
@@ -114,10 +114,30 @@ export async function getSubscribers(address: Address): Promise<Address[]> {
 
 export async function getSubscriptions(address: Address): Promise<Address[]> {
   return (
-    await client.get("/v1/subscriptions/", {
+    await nonAuthedClient.get("/v1/subscriptions/", {
       params: {
         from: address.toString(),
       },
     })
   ).data.map((address: string) => new Address(address));
+}
+
+export type Collection = {
+  id: string;
+  title: string;
+  desc: string;
+  addresses: Address[];
+};
+
+export async function getCollections(): Promise<Collection[]> {
+  const response = await nonAuthedClient.get("/v1/collections/");
+
+  return response.data.map(
+    (c: { id: string; title: string; desc: string; addresses: string[] }) => ({
+      id: c.id,
+      title: c.title,
+      desc: c.desc,
+      addresses: c.addresses.map((a: string) => new Address(a)),
+    })
+  );
 }

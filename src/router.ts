@@ -8,6 +8,7 @@ import { CID } from "multiformats";
 import { base32 } from "multiformats/bases/base32";
 import { getOrCreate as getOrCreateIPNFT } from "./models/IPNFT";
 import * as Account from "./models/Account";
+import Explore from "./views/Explore.vue";
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -15,6 +16,7 @@ export default createRouter({
     { path: "/", component: Home },
     { path: "/settings", component: Settings },
     { path: "/mint", component: Mint },
+    { path: "/explore", component: Explore },
     {
       path: "/:cid(baf[0-7a-zA-Z]{56})",
       component: Token,

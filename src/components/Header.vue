@@ -6,22 +6,23 @@ import Bars3Icon from "@/assets/bars-2.svg?component";
 </script>
 
 <template lang="pug">
-header.w-full.daisy-navbar.bg-base-100.border-b.justify-center
-  .w-full.max-w-3xl.px-2
-    .daisy-navbar-start 
-      router-link.transition-transform.duration-100.active_scale-90.block.w-min(
-        to="/"
-      ) 
-        span.font-bold.text-lg NFTime
+header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.p-0
+  .w-full.max-w-3xl.h-full
+    .daisy-navbar-start.flex.items-baseline.gap-4.h-full
+      router-link.transition-transform.duration-100.active_scale-90(to="/") Home 🏡
+      router-link.transition-transform.duration-100.active_scale-90(
+        to="/explore"
+      ) Explore ✨
     .daisy-navbar-center
     .daisy-navbar-end.flex.justify-end
       .flex.h-12.items-center.gap-2(v-if="account") 
-        router-link.bbtn(to="/mint") 
-          span ✨
-        router-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
+        router-link#mint-button.bbtn(to="/mint") 
+          span.select-none 🌱
+
+        router-link#profile-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
           :to="'/' + account.address.value?.toString()"
         )
-          code.text-sm.lowercase {{ account.address.value?.display }}
+          code#address.text-sm.lowercase {{ account.address.value?.display }}
           PFP.bg-base-200.cursor-pointer.h-full(
             :account="account"
             mask="squircle"
@@ -43,4 +44,23 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center
         span Connect
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.daisy-navbar-start > .router-link-exact-active {
+  @apply font-bold text-primary;
+}
+
+#mint-button.router-link-exact-active {
+  @apply bg-primary;
+}
+
+#profile-link.router-link-exact-active {
+  #address {
+    @apply font-bold text-primary;
+  }
+
+  // TODO: Apply border to the PFP.
+  // .pfp {
+  //   @apply box-content border-2 border-primary;
+  // }
+}
+</style>
