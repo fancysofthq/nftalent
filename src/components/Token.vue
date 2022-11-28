@@ -30,6 +30,19 @@ const {
   animatePlaceholder?: boolean;
 }>();
 
+const emit = defineEmits<{
+  (event: "clickInterest"): void;
+  (event: "redeem"): void;
+}>();
+
+const isRedeemable = computed(() => {
+  return token.ipnft1155ExpiredAt;
+});
+
+const mayRedeem = computed(() => {
+  return isRedeemable.value && token.ipnft1155Balance?.gt(0);
+});
+
 const anyTags = computed(
   () =>
     token.ipnft1155ExpiredAt ||
@@ -37,19 +50,13 @@ const anyTags = computed(
     token.ipnft1155Finalized
 );
 
-onMounted(() => {
-  token.fetchIPFSMetadata();
-});
-
-eth.onConnect(() => {
-  token.fetchEthMetadata();
-});
-
 const rootClass = computed(() => {
   switch (kind) {
     case Kind.Full: {
       if (token.metadata?.$schema == "nftalent/collectible/image?v=1") {
         return "grid grid-cols-1";
+      } else if (token.ipnft1155ExpiredAt) {
+        return "grid grid-cols-2 sm_grid-cols-12";
       } else {
         return "grid grid-cols-1 sm_grid-cols-3";
       }
@@ -63,26 +70,39 @@ const rootClass = computed(() => {
   }
 });
 
+const imgWrapperClass = computed(() => {
+  switch (kind) {
+    case Kind.Full:
+      if (token.metadata?.$schema == "nftalent/collectible/image?v=1") {
+        return "col-span-1";
+      } else if (token.ipnft1155ExpiredAt) {
+        return "col-span-3 sm_col-span-3";
+      } else {
+        return "col-span-1 sm_col-span-2";
+      }
+    case Kind.Card:
+      return "col-span-1";
+    case Kind.FeedEntry:
+      return "col-span-2";
+    case Kind.Thumbnail:
+      return "col-span-1";
+  }
+});
+
 const infoClass = computed(() => {
   switch (kind) {
     case Kind.Full:
-      return "col-span-2 justify-between";
+      if (token.ipnft1155ExpiredAt) {
+        return "col-span-8";
+      } else {
+        return "";
+      }
     case Kind.Card:
       return "justify-between";
     case Kind.FeedEntry:
       return "col-span-8 justify-center";
   }
 });
-
-function urlFromImage(image: string | URL | FileWithUrl): URL {
-  if (image instanceof URL) {
-    return IPFS.processUri(image);
-  } else if (typeof image == "string") {
-    return IPFS.processUri(new URL(image));
-  } else {
-    return image.url!;
-  }
-}
 
 const imageUrl: ComputedRef<URL | undefined> = computed(() => {
   if (!token.metadata) return undefined;
@@ -119,10 +139,16 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
 
 const maySetPfp = computed(() => {
   return (
-    token.ipnft1155ExpiredAt == null &&
-    eth.account.value &&
-    token.ipnft721CurrentOwner?.equals(eth.account.value)
+    eth.account.value && token.ipnft721CurrentOwner?.equals(eth.account.value)
   );
+});
+
+onMounted(() => {
+  token.fetchIPFSMetadata();
+});
+
+eth.onConnect(() => {
+  token.fetchEthMetadata();
 });
 
 async function setPfp() {
@@ -130,43 +156,71 @@ async function setPfp() {
   const tx = await eth.persona.setPfp(token.token.toERC721Token().toNFT());
   console.debug("Set PFP", tx);
 }
+
+function urlFromImage(image: string | URL | FileWithUrl): URL {
+  if (image instanceof URL) {
+    return IPFS.processUri(image);
+  } else if (typeof image == "string") {
+    return IPFS.processUri(new URL(image));
+  } else {
+    return image.url!;
+  }
+}
 </script>
 
 <template lang="pug">
-.h-full.rounded-lg(
+.overflow-hidden(
   :class="rootClass"
   style="grid-template-rows: min-content auto"
 )
   // Image
-  .contents(tabindex="-1" :to="'/' + token.token.cid.toString()")
-    .rounded-lg.aspect-square.object-contain.w-full.h-full.bg-cover.bg-center(
-      v-if="imageUrl"
-      :style="'background-image: url(' + imageUrl.toString() + ');'"
-    )
-      img.rounded-lg.aspect-square.object-contain.w-full.h-full.backdrop-blur.backdrop-brightness-75(
-        :src="imageUrl.toString()"
-      )
-    Placeholder.w-full.aspect-square.object-cover(
-      v-else
-      :animate="animatePlaceholder"
-    )
-
-  .flex.flex-col.gap-2.p-3.h-full(
-    :class="infoClass"
-    v-if="kind != Kind.Thumbnail"
+  router-link(
+    :to="'/' + token.token.cid.toString()"
+    custom
+    v-slot="{ href, navigate }"
   )
+    a.w-full(
+      tabindex="-1"
+      :href="href"
+      :class="imgWrapperClass"
+      @click.exact.prevent="emit('clickInterest')"
+    )
+      .w-full.h-full.bg-checkerboard.bg-fixed(v-if="imageUrl")
+        img.w-full.h-full(
+          :src="imageUrl.toString()"
+          :class="{ 'aspect-square object-contain': isRedeemable || kind !== Kind.Full }"
+        )
+      Placeholder.w-full.h-full.aspect-square.object-cover(
+        v-else
+        :animate="animatePlaceholder"
+        :rounded="false"
+        :class="{ 'aspect-square object-contain': isRedeemable || kind !== Kind.Full }"
+      )
+
+  // Information
+  .flex.flex-col.gap-2.p-3.h-full(:class="infoClass")
     .flex.flex-col.gap-2(
       :class="{ 'justify-between h-full': kind === Kind.Card }"
     )
       // Basic information
-      .flex.flex-col(:class="kind === Kind.FeedEntry ? 'gap-1' : 'gap-2'")
+      .flex.flex-col.gap-1
         // Title
         span.flex.flex-wrap.items-center.justify-between.gap-1
-          span.font-bold.text-primary.text-lg.leading-none(
+          router-link(
             v-if="token.metadata?.name"
             :to="'/' + token.token.cid.toString()"
-          ) {{ token.metadata.name }}
-          Placeholder.h-5.w-48(v-else :animate="animatePlaceholder")
+            custom
+            v-slot="{ href, navigate }"
+          ) 
+            a.daisy-link-primary.font-bold.text-lg.leading-none(
+              :href="href"
+              @click.exact.prevent="emit('clickInterest')"
+            ) {{ token.metadata.name }}
+          Placeholder.h-5.w-48(
+            v-else
+            :animate="animatePlaceholder"
+            @click="emit('clickInterest')"
+          )
 
           .daisy-dropdown.daisy-dropdown-end(v-if="kind === Kind.Full")
             label(tabindex="0")
@@ -206,7 +260,7 @@ async function setPfp() {
 
       // Mint data
       .leading-tight.text-xs.text-base-content.text-opacity-75.whitespace-normal(
-        v-if="kind === Kind.Full || kind === Kind.Card"
+        v-if="kind === Kind.Full || kind === Kind.Card || kind === Kind.Thumbnail"
       )
         span.align-middle &copy;&nbsp;
         Chip.align-middle.h-4.bg-base-200.text-opacity-100.text-xs(
@@ -238,5 +292,46 @@ async function setPfp() {
         span.align-middle &nbsp;⋅&nbsp;
         span.align-middle {{ ((token.ipnft721Royalty || 0) * 100).toFixed(1) }}% royalty
 
-    slot
+  // Redeemable badge
+  .app-redeemable-badge.flex.justify-center.items-center.h-full.w-full.border-dashed(
+    v-if="kind === Kind.Full && isRedeemable"
+    :class="mayRedeem ? 'may-redeem cursor-pointer' : 'cursor-not-allowed'"
+    @click="mayRedeem ? emit('redeem') : null"
+  )
+    .app-button.uppercase.text-base-content.select-none(
+      :class="mayRedeem ? 'transition-all duration-100 font-semibold' : 'text-opacity-50'"
+    ) Redeem ({{ token.ipnft1155Balance }})
 </template>
+
+<style scoped lang="scss">
+.app-redeemable-badge {
+  &.may-redeem:hover {
+    > .app-button {
+      @apply text-primary;
+    }
+  }
+
+  &.may-redeem:active {
+    > .app-button {
+      @apply scale-90;
+    }
+  }
+}
+
+@media (max-width: 639px) {
+  .app-redeemable-badge {
+    @apply col-span-2 border-t-2 p-4;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-redeemable-badge {
+    @apply border-l-2;
+  }
+
+  .app-button {
+    text-orientation: mixed;
+    writing-mode: vertical-lr;
+  }
+}
+</style>

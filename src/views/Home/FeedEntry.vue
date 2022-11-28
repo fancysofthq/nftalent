@@ -10,7 +10,10 @@ import { formatDistance } from "date-fns";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
 
 const props = defineProps<{ event: EventWrapper; token: IPNFT }>();
-const emit = defineEmits<{ (event: "entryClick", token: IPNFT): void }>();
+const emit = defineEmits<{
+  (event: "entryClick", token: IPNFT): void;
+  (event: "redeem", token: IPNFT): void;
+}>();
 
 const timestamp: Ref<Date | undefined> = ref();
 
@@ -28,7 +31,7 @@ eth.onConnect(() => {
 const eventEmoji = computed(() => {
   switch (props.event.kind) {
     case EventKind.List:
-      return "✨";
+      return "📦";
     case EventKind.Purchase:
       return "💳";
   }
@@ -75,10 +78,11 @@ const eventActor = computed(() => {
     span.text-base-content.text-opacity-50(v-if="timestamp") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
     Placeholder.inline-block.h-5.w-12(v-else)
 
-  .border.rounded(v-if="event.isList" style="grid-template-columns: 4rem auto")
-    Token.cursor-pointer(
-      :token="token"
-      :kind="TokenKind.Full"
-      @click.prevent="emit('entryClick', token)"
-    )
+  Token.border.rounded(
+    v-if="event.isList"
+    :token="token"
+    :kind="TokenKind.Full"
+    @click-interest="emit('entryClick', token)"
+    @redeem="emit('redeem', token)"
+  )
 </template>

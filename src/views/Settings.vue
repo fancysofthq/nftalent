@@ -30,11 +30,11 @@ function saveIpfsGateway() {
 </script>
 
 <template lang="pug">
-.w-full.flex.justify-center.p-4
-  .w-full.max-w-3xl.flex.flex-col.gap-2
-    h2
+.w-full.flex.justify-center
+  .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
+    h2.flex.items-baseline.gap-2
       span.font-bold.text-lg ⚙️ Settings
-      small.text-sm.text-base-content.text-opacity-75 &nbsp;Set things here
+      small.text-sm.text-base-content.text-opacity-75 Set things here
     form.daisy-form-control.w-full.p-4.border
       label.daisy-label
         span.daisy-label-text 

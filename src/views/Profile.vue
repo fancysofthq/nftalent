@@ -2,6 +2,7 @@
 import eventDb from "@/services/eth/event-db";
 import { copyToClipboard, notNull } from "@/util";
 import { Address } from "@/services/eth/Address";
+import Redeem from "@/components/modals/Redeem.vue";
 
 export async function fetchPfa(account: string): Promise<string | undefined> {
   const accountObj = await eventDb.db.get("Account", account);
@@ -34,6 +35,7 @@ import * as api from "@/services/api";
 const props = defineProps<{ account: Account }>();
 const tokens: ShallowRef<IPNFTModel[]> = ref([]);
 const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
+const redeemModal: ShallowRef<IPNFTModel | undefined> = ref();
 const pfa: Ref<string | undefined> = ref();
 const isChangingPfa: Ref<boolean> = ref(false);
 const pfaEphemeral: Ref<string> = ref("");
@@ -58,12 +60,12 @@ onMounted(async () => {
     "IPNFT",
     "currentOwner",
     props.account.address.value!.toString(),
-    "prev",
+    "next",
     (t) => {
       const token = IPNFTModel.getOrCreate(
         IPNFT.uint256ToCID(BigNumber.from(t.id))
       );
-      token.ipnft1155ExpiredAt = t.ipnft1155ExpiredAt;
+      token.ipnft1155ExpiredAt = t.ipnft1155ExpiredAt || null;
       token.ipnft1155Finalized = t.ipnft1155IsFinalized;
       tokens.value.push(token);
     }
@@ -128,11 +130,11 @@ async function unsubscribe() {
 </script>
 
 <template lang="pug">
-.w-full.flex.justify-center.p-4
-  .w-full.max-w-3xl.flex.flex-col.gap-2
+.w-full.flex.justify-center
+  .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
     h2.flex.gap-2.items-baseline
-      span.font-bold.text-lg 🎭 Profile
-      router-link.text-sm.text-base-content.text-opacity-75(
+      span.font-bold.text-lg.min-w-max 🎭 Profile
+      router-link.text-sm.text-base-content.text-opacity-75.break-all(
         :to="'/' + (account.ensName.value || account.address.value?.toString())"
       ) {{ account.ensName.value || account.address.value?.toString() }}
     .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-1
@@ -164,14 +166,14 @@ async function unsubscribe() {
               span Save
       template(v-else)
         .flex.gap-1
-          p(v-if="pfa") {{ pfa }}
+          p.text-lg(v-if="pfa") {{ pfa }}
           p.text-base-content.text-opacity-50.italic(v-else) No PFA set
           PencilSquareIcon.h-4.w-4.cursor-pointer.text-base-content.text-opacity-40.transition-transform.transition-colors.hover_scale-105.hover_text-primary.hover_text-opacity-100(
             v-if="isSelf"
             @click="pfaEphemeral = pfa || ''; isChangingPfa = true"
           )
 
-      .flex.justify-center
+      .flex.justify-center.text-base-content.text-opacity-75
         span {{ subscribers.length }} subscriber(s)
         span &nbsp;⋅&nbsp;
         span {{ subscriptions.length }} subscription(s)
@@ -186,24 +188,28 @@ async function unsubscribe() {
         button.daisy-btn(v-else @click="unsubscribe") 🚫 Unsubscribe
 
     template(v-if="redeemables.length > 0")
-      h2.font-bold.text-lg Redeemables ({{ redeemables.length }}) 🎟
-      //- TODO: Horizontally scrollable.
-      .grid.grid-cols-4.gap-3
-        Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
+      h2.flex.gap-2.items-baseline
+        span.font-bold.text-lg.min-w-max 🎟 Redeemables ({{ redeemables.length }})
+        span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be redeemed
+      .flex.flex-col.gap-3
+        Token.rounded.bg-base-100.border(
           v-for="token in redeemables"
           :token="token"
-          :kind="TokenKind.Thumbnail"
-          @click="tokenModal = token"
+          :kind="TokenKind.Full"
+          @click-interest="tokenModal = token"
+          @redeem="redeemModal = token"
         )
 
     template(v-if="collectibles.length > 0")
-      h2.font-bold.text-lg Collectibles ({{ collectibles.length }}) 🧸
+      h2.flex.gap-2.items-baseline
+        span.font-bold.text-lg.min-w-max 🧸 Collectibles ({{ collectibles.length }})
+        span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be collected
       .grid.grid-cols-3.gap-3
-        Token.rounded.shadow-lg.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
+        Token.rounded.border.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
           v-for="token in collectibles"
           :token="token"
           :kind="TokenKind.Card"
-          @click="tokenModal = token"
+          @click-interest="tokenModal = token"
         )
 
 Teleport(to="body")
@@ -211,5 +217,12 @@ Teleport(to="body")
     v-if="tokenModal"
     @close="tokenModal = undefined"
     :ipnft="tokenModal"
+  )
+
+  Redeem(
+    v-if="redeemModal && redeemModal.ipnft1155Balance"
+    @close="redeemModal = undefined"
+    :ipnft="redeemModal"
+    :balance="redeemModal.ipnft1155Balance"
   )
 </template>

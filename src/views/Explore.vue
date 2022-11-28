@@ -32,8 +32,8 @@ onMounted(async () => {
 </script>
 
 <template lang="pug">
-.w-full.flex.justify-center.p-4
-  .w-full.max-w-3xl.flex.flex-col.gap-2
+.w-full.flex.justify-center
+  .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
     h2.flex.items-baseline.gap-2
       span.font-bold.text-lg ✨ Explore
       span.text-base-content.text-opacity-75.text-sm Find new accounts to follow
@@ -45,7 +45,7 @@ onMounted(async () => {
         h3.font-semibold.leading-none.text-primary {{ collection.title }}
         p.text-sm {{ collection.desc }}
       .flex.gap-3.flex-wrap
-        router-link.flex.flex-col.gap-1.items-center(
+        router-link.flex.flex-col.gap-1.items-center.w-32(
           v-for="account in collection.accounts"
           :to="'/' + account.address.value?.toString()"
         )

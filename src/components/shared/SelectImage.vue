@@ -39,7 +39,7 @@ label.label.h-full.w-full.flex.flex-col.justify-center.items-center(
     v-if="file"
     :src="file.url?.toString()"
   )
-  .flex.flex-col.items-center(v-else)
+  .flex.flex-col.items-center.select-none(v-else)
     span.text-2xl 🖼
     span.text-sm.font-medium Select image
   input.input.hidden(

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as eth from "@/services/eth";
-import { onMounted, type Ref, ref, type ShallowRef, markRaw } from "vue";
+import { onMounted, ref, type ShallowRef } from "vue";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import IPNFTModel from "@/models/IPNFT";
 import History from "./Token/History.vue";
@@ -14,7 +14,7 @@ import Redeem from "@/components/modals/Redeem.vue";
 
 const props = defineProps<{ ipnft: IPNFTModel }>();
 const listings: ShallowRef<Listing[]> = ref([]);
-const purchaseListing: Ref<Listing | undefined> = ref();
+const purchaseListing: ShallowRef<Listing | undefined> = ref();
 const redeemModal = ref(false);
 
 onMounted(() => {
@@ -37,11 +37,11 @@ eth.onConnect(() => props.ipnft.fetchEthMetadata());
 </script>
 
 <template lang="pug">
-.w-full.flex.justify-center.p-4
-  .w-full.max-w-3xl.flex.flex-col.gap-2
-    h2.font-bold.text-lg 
-      span.inline-block.select-none Token 💎
-      router-link.text-gray-500.text-sm.ml-2.daisy-link-hover(
+.w-full.flex.justify-center
+  .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
+    h2.flex.gap-2.items-baseline
+      span.font-bold.text-lg.min-w-max 💎 Token
+      router-link.text-sm.text-base-content.text-opacity-75.break-all.daisy-link-hover(
         :to="'/' + props.ipnft.token.cid.toString()"
       ) {{ props.ipnft.token.cid }}
     Token.border.rounded-lg(
@@ -49,13 +49,6 @@ eth.onConnect(() => props.ipnft.fetchEthMetadata());
       :showRedeemButton="true"
       @redeem="redeemModal = true"
     )
-      template(v-if="ipnft.ipnft1155ExpiredAt")
-        button.daisy-btn.daisy-btn-primary.mt-1(
-          :disabled="!ipnft.ipnft1155Balance || ipnft.ipnft1155Balance.eq(0)"
-          @click="redeemModal = true"
-        )
-          span.text-xl 🎟
-          span Redeem (you have {{ ipnft.ipnft1155Balance }})
 
     h2.font-bold.text-lg Listings ({{ listings.length }}) 📦
     table.daisy-table.rounded-lg.border

@@ -1,23 +1,39 @@
 <script setup lang="ts">
-import { onMounted, type Ref, ref, onUnmounted } from "vue";
+import { ref, onUnmounted, type ShallowRef } from "vue";
 import { uint256ToCID } from "@/services/eth/contract/IPNFT";
 import IPNFT from "@/models/IPNFT";
 import Entry from "./FeedEntry.vue";
+import * as eth from "@/services/eth";
+import * as api from "@/services/api";
+import Explore from "../Explore.vue";
 
 type Entry = {
   event: EventWrapper;
   token: IPNFT;
 };
 
-const emit = defineEmits<{ (event: "entryClick", ipnft: IPNFT): void }>();
+const emit = defineEmits<{
+  (event: "entryClick", ipnft: IPNFT): void;
+  (event: "redeem", ipnft: IPNFT): void;
+}>();
 
-const entries: Ref<Entry[]> = ref([]);
-let cancel = false;
+const subscriptions: ShallowRef<Address[]> = ref([]);
 
-onMounted(async () => {
+const entries: ShallowRef<Entry[]> = ref([]);
+let cancelFeedSubscription = false;
+
+eth.onConnect(async () => {
+  subscriptions.value.push(eth.account.value!.address.value!);
+
+  subscriptions.value.push(
+    ...(await api.getSubscriptions(eth.account.value!.address.value!))
+  );
+
   subscribeToFeed(
+    subscriptions.value,
     (_entries) => {
-      if (cancel) return;
+      if (cancelFeedSubscription) return;
+
       entries.value.unshift(
         ..._entries.map((e) => ({
           event: e,
@@ -26,25 +42,26 @@ onMounted(async () => {
       );
     },
     1000,
-    () => cancel
+    () => cancelFeedSubscription
   );
 });
 
 onUnmounted(() => {
-  cancel = true;
+  cancelFeedSubscription = true;
 });
 </script>
 
 <template lang="pug">
-Entry.p-4(
+Entry(
   v-if="entries.length"
   v-for="entry in entries"
   :event="entry.event"
   :token="entry.token"
   style="grid-template-columns: 7rem auto"
   @entry-click="emit('entryClick', entry.token)"
+  @redeem="emit('redeem', entry.token)"
 )
-.p-4.text-base-content.text-center(v-else) Empty feed
+Explore.border.rounded-lg(v-else)
 </template>
 
 <script lang="ts">
@@ -55,6 +72,7 @@ import edb, {
 } from "@/services/eth/event-db";
 import { timeout } from "@/util";
 import { BigNumber } from "ethers";
+import { Address } from "@/services/eth/Address";
 
 export enum EventKind {
   List,
@@ -101,12 +119,14 @@ export class EventWrapper {
 }
 
 async function subscribeToFeed(
+  filter: Address[],
   callback: (events: EventWrapper[]) => void,
   pollInterval: number,
   pollCancelled: () => boolean
 ) {
   let listBlock = 0;
   let purchaseBlock = 0;
+  const filterStrings = filter.map((a) => a.toString());
 
   while (!pollCancelled()) {
     const promises = [];
@@ -121,7 +141,10 @@ async function subscribeToFeed(
         "next",
         (e) => {
           listBlock = e.blockNumber + 1;
-          events.push(new EventWrapper(EventKind.List, e));
+
+          if (filterStrings.includes(e.seller)) {
+            events.push(new EventWrapper(EventKind.List, e));
+          }
         }
       )
     );

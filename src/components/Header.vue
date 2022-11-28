@@ -6,8 +6,8 @@ import Bars3Icon from "@/assets/bars-2.svg?component";
 </script>
 
 <template lang="pug">
-header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.p-0
-  .w-full.max-w-3xl.h-full
+header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
+  .w-full.max-w-3xl.h-full.px-4
     .daisy-navbar-start.flex.items-baseline.gap-4.h-full
       router-link.transition-transform.duration-100.active_scale-90(to="/") Home 🏡
       router-link.transition-transform.duration-100.active_scale-90(
