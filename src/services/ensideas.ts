@@ -1,5 +1,5 @@
 export type Response = {
-  address: string;
+  address: string; // TODO: `: Address`
   name: string | null;
   displayName: string | null;
   avatar: string | null;

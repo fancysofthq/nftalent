@@ -1,7 +1,7 @@
 import { BigNumberish } from "ethers";
-import Model from "@/models/Account";
+import { Address } from "../Address";
 
 export type RoyaltyInfo = {
-  receiver: Model;
+  receiver: Address;
   royalty: BigNumberish;
 };

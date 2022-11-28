@@ -1,4 +1,4 @@
-import Model from "./Account";
+import * as Account from "./Account";
 import IPNFTModel, { getOrCreate as getOrCreateIPNFT } from "./IPNFT";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import edb from "@/services/eth/event-db";
@@ -11,16 +11,16 @@ import { markRaw } from "@vue/reactivity";
 export default class Listing {
   readonly id: BytesLike;
   readonly token: IPNFTModel;
-  readonly seller: Model;
-  readonly app: Model;
+  readonly seller: Account.default;
+  readonly app: Account.default;
   readonly priceRef: ShallowRef<BigNumber>;
   readonly stockSizeRef: ShallowRef<BigNumber>;
 
   constructor(raw: RawListing) {
     this.id = raw.id;
     this.token = getOrCreateIPNFT(IPNFT.uint256ToCID(raw.token.id));
-    this.seller = raw.seller;
-    this.app = raw.app;
+    this.seller = Account.getOrCreateFromAddress(raw.seller);
+    this.app = Account.getOrCreateFromAddress(raw.app);
     this.priceRef = ref(raw.price);
     this.stockSizeRef = ref(raw.stockSize);
   }

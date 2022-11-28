@@ -1,4 +1,4 @@
-import Model from "./Account";
+import * as Account from "./Account";
 import { type Metadata as ERC1155Metadata } from "@/services/eth/contract/IERC1155";
 import { BigNumber } from "ethers";
 import * as ipfs from "@/services/ipfs";
@@ -18,10 +18,11 @@ export default class IPNFT {
 
   private readonly _metadata: Ref<ERC1155Metadata | undefined> = ref();
 
-  private readonly _ipnft721Minter: Ref<Model | undefined> = ref();
+  private readonly _ipnft721Minter: Ref<Account.default | undefined> = ref();
   private readonly _ipnft721MintedAt: Ref<Date | undefined> = ref();
   private readonly _ipnft721Royalty: Ref<number | undefined> = ref();
-  private readonly _ipnft721CurrentOwner: Ref<Model | undefined> = ref();
+  private readonly _ipnft721CurrentOwner: Ref<Account.default | undefined> =
+    ref();
 
   private readonly _ipnft1155Balance: Ref<BigNumber | undefined> = ref();
   private readonly _ipnft1155TotalSupply: Ref<BigNumber | undefined> = ref();
@@ -29,10 +30,10 @@ export default class IPNFT {
   private readonly _ipnft1155ExpiredAt: Ref<Date | null | undefined> = ref();
 
   private _metadataPromise?: Promise<ERC1155Metadata>;
-  private _ipnft721MinterPromise?: Promise<Model>;
+  private _ipnft721MinterPromise?: Promise<Account.default>;
   private _ipnft721MintedAtPromise?: Promise<Date | undefined>;
   private _ipnft721RoyaltyPromise?: Promise<number>;
-  private _ipnft721CurrentOwnerPromise?: Promise<Model>;
+  private _ipnft721CurrentOwnerPromise?: Promise<Account.default>;
   private _ipnft1155BalancePromise?: Promise<BigNumber>;
   private _ipnft1155TotalSupplyPromise?: Promise<BigNumber>;
   private _ipnft1155FinalizedPromise?: Promise<boolean | null>;
@@ -52,10 +53,10 @@ export default class IPNFT {
       ipnft1155ExpiredAt,
     }: {
       metadata: Ref<ERC1155Metadata | undefined>;
-      ipnft721Minter: Ref<Model | undefined>;
+      ipnft721Minter: Ref<Account.default | undefined>;
       ipnft721MintedAt: Ref<Date | undefined>;
       ipnft721Royalty: Ref<number | undefined>;
-      ipnft721CurrentOwner: Ref<Model | undefined>;
+      ipnft721CurrentOwner: Ref<Account.default | undefined>;
       ipnft1155Balance: Ref<BigNumber | undefined>;
       ipnft1155TotalSupply: Ref<BigNumber | undefined>;
       ipnft1155Finalized: Ref<boolean | null | undefined>;
@@ -92,11 +93,11 @@ export default class IPNFT {
     this._metadata.value = value;
   }
 
-  get ipnft721Minter(): Model | undefined {
+  get ipnft721Minter(): Account.default | undefined {
     return this._ipnft721Minter.value;
   }
 
-  set ipnft721Minter(value: Model | undefined) {
+  set ipnft721Minter(value: Account.default | undefined) {
     this._ipnft721Minter.value = value;
   }
 
@@ -116,11 +117,11 @@ export default class IPNFT {
     this._ipnft721Royalty.value = value;
   }
 
-  get ipnft721CurrentOwner(): Model | undefined {
+  get ipnft721CurrentOwner(): Account.default | undefined {
     return this._ipnft721CurrentOwner.value;
   }
 
-  set ipnft721CurrentOwner(value: Model | undefined) {
+  set ipnft721CurrentOwner(value: Account.default | undefined) {
     this._ipnft721CurrentOwner.value = value;
   }
 
@@ -172,7 +173,10 @@ export default class IPNFT {
 
   private async _fetchIPNFT721(): Promise<void> {
     this._ipnft721Minter.value ||= await (this._ipnft721MinterPromise ||=
-      (async () => await eth.ipnft721.ownerOf(this.token))());
+      (async () =>
+        Account.getOrCreateFromAddress(
+          await eth.ipnft721.ownerOf(this.token)
+        ))());
 
     this._ipnft721MintedAt.value ||= await (this._ipnft721MintedAtPromise ||=
       (async () =>
@@ -189,13 +193,18 @@ export default class IPNFT {
 
     this._ipnft721CurrentOwner.value ||=
       await (this._ipnft721CurrentOwnerPromise ||= (async () =>
-        await eth.ipnft721.ownerOf(this.token))());
+        Account.getOrCreateFromAddress(
+          await eth.ipnft721.ownerOf(this.token)
+        ))());
   }
 
   private async _fetchIPNFT1155(): Promise<void> {
     this._ipnft1155Balance.value ||= await (this._ipnft1155BalancePromise ||=
       (async () =>
-        await eth.ipnft1155.balanceOf(eth.account.value!, this.token))());
+        await eth.ipnft1155.balanceOf(
+          eth.account.value!.address.value!,
+          this.token
+        ))());
 
     this._ipnft1155TotalSupply.value ||=
       await (this._ipnft1155TotalSupplyPromise ||= (async () =>

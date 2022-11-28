@@ -36,7 +36,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
       rawTokenURI = (
         await erc721.tokenURI(
           new IERC721Token(
-            Account.getOrCreateFromAddress(pfp.contractAddress),
+            new Address(pfp.contractAddress),
             BigNumber.from(pfp.tokenId)
           )
         )
@@ -52,7 +52,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
       rawTokenURI = (
         await nft.uri(
           new IERC721Token(
-            Account.getOrCreateFromAddress(pfp.contractAddress),
+            new Address(pfp.contractAddress),
             BigNumber.from(pfp.tokenId)
           )
         )
@@ -85,6 +85,7 @@ import IERC165 from "@/services/eth/contract/IERC165";
 import IERC721Metadata from "@/services/eth/contract/IERC721Metadata";
 import * as IPFS from "@/services/ipfs";
 import IERC1155MetadataURI from "@/services/eth/contract/IERC1155MetadataURI";
+import { Address } from "@/services/eth/Address";
 
 const props = defineProps<{ account: Account.default }>();
 const img: Ref<URL | undefined> = ref();
@@ -95,7 +96,12 @@ function updateSvg() {
 }
 
 onMounted(() => {
-  updateSvg();
+  if (props.account.address.value) {
+    updateSvg();
+  } else {
+    props.account.resolve().then(() => updateSvg());
+  }
+
   queryPfp();
 });
 

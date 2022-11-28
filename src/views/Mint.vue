@@ -451,7 +451,12 @@ async function mint721(
   ipnftTag: IPNFT.Tag,
   royalty: Uint8
 ): Promise<ContractTransaction> {
-  return await eth.ipnft721.mint(eth.account.value!, root, ipnftTag, royalty);
+  return await eth.ipnft721.mint(
+    eth.account.value!.address.value!,
+    root,
+    ipnftTag,
+    royalty
+  );
 }
 
 async function mint1155(
@@ -462,12 +467,16 @@ async function mint1155(
   price: BigNumberish
 ): Promise<ContractTransaction> {
   return await eth.ipnft1155.mint(
-    MetaStore.account,
+    MetaStore.address,
     new IPNFT.Token(cid),
     amount,
     finalize,
     expiredAt,
-    new ListingConfig(eth.account.value!, eth.app, price).toBytes()
+    new ListingConfig(
+      eth.account.value!.address.value!,
+      eth.app,
+      price
+    ).toBytes()
   );
 }
 
@@ -564,9 +573,9 @@ async function uploadToIpfs(
 
   const ipnftTag = new IPNFT.Tag(
     (await eth.provider.value!.getNetwork()).chainId,
-    IPNFT721.account.address.value!,
+    IPNFT721.address,
     eth.account.value!.address.value!,
-    await eth.ipnft721.minterNonce(eth.account.value!)
+    await eth.ipnft721.minterNonce(eth.account.value!.address.value!)
   );
 
   const root = await encodeBlock({

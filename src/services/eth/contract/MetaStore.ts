@@ -9,7 +9,6 @@ import {
   Signer,
 } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import Model from "@/models/Account";
 import { Token as ERC1155Token } from "./IERC1155";
 import { EventDB } from "../event-db";
 import { app } from "../../eth";
@@ -20,7 +19,7 @@ import { Address } from "../Address";
 
 export class ListingConfig {
   constructor(
-    readonly seller: Model,
+    readonly seller: Address,
     readonly app: Address,
     readonly price: BigNumberish
   ) {}
@@ -28,33 +27,33 @@ export class ListingConfig {
   toBytes(): BytesLike {
     return ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "uint256"],
-      [this.seller.address.value!.toString(), this.app.toString(), this.price]
+      [this.seller.toString(), this.app.toString(), this.price]
     );
   }
 }
 
 export class Listing {
-  static id(token: NFT, seller: Model): BytesLike {
+  static id(token: NFT, seller: Address): BytesLike {
     return ethers.utils.keccak256(
       ethers.utils.defaultAbiCoder.encode(
         ["address", "uint256", "address", "address"],
-        [token.contract.address, token.id, seller.address, app]
+        [token.contract.toString(), token.id, seller.toString(), app.toString()]
       )
     );
   }
 
-  static idHex(token: NFT, seller: Model): string {
+  static idHex(token: NFT, seller: Address): string {
     return ethers.utils.hexlify(Listing.id(token, seller));
   }
 
   static fromRawEvent(e: any): Listing {
     return new Listing({
       token: new ERC1155Token(
-        Model.fromAddress(e.args!.token.contract_ as string),
+        new Address(e.args!.token.contract_ as string),
         e.args!.token.id as BigNumber
       ),
-      seller: Model.fromAddress(e.args!.seller as string),
-      app: Model.fromAddress(e.args!.app as string),
+      seller: new Address(e.args!.seller as string),
+      app: new Address(e.args!.app as string),
       price: e.args!.price as BigNumber,
       stockSize: e.args!.stockSize as BigNumber,
       blockNumber: e.blockNumber as number,
@@ -64,11 +63,11 @@ export class Listing {
   static fromDBEvent(e: List): Listing {
     return new Listing({
       token: {
-        contract: IPNFT1155.account,
+        contract: IPNFT1155.address,
         id: BigNumber.from(e.token.id),
       },
-      seller: Model.fromAddress(e.seller),
-      app: Model.fromAddress(app),
+      seller: new Address(e.seller),
+      app: app,
       price: BigNumber.from(0),
       stockSize: BigNumber.from(0),
       blockNumber: e.blockNumber,
@@ -77,8 +76,8 @@ export class Listing {
 
   id: BytesLike;
   token: NFT;
-  seller: Model;
-  app: Model;
+  seller: Address;
+  app: Address;
   price: BigNumber;
   stockSize: BigNumber;
 
@@ -96,8 +95,8 @@ export class Listing {
   }: {
     id?: BytesLike;
     token: NFT;
-    seller: Model;
-    app: Model;
+    seller: Address;
+    app: Address;
     price: BigNumber;
     stockSize: BigNumber;
     blockNumber?: number;
@@ -219,7 +218,7 @@ export type Purchase = EventBase & {
 };
 
 export default class MetaStore {
-  static readonly account = Model.fromAddress(
+  static readonly address = new Address(
     import.meta.env.VITE_META_STORE_ADDRESS
   );
 
@@ -227,7 +226,7 @@ export default class MetaStore {
 
   constructor(providerOrSigner: Provider | Signer) {
     this.contract = new BaseType(
-      MetaStore.account.address.value!.toString(),
+      MetaStore.address.toString(),
       abi,
       providerOrSigner
     );
@@ -243,10 +242,10 @@ export default class MetaStore {
   /**
    * Fetch listings by account. It'd include initial price and stock size.
    */
-  async listingsByAccount(account: Model): Promise<Listing[]> {
+  async listingsByAccount(account: Address): Promise<Listing[]> {
     const filter = this.contract.filters.List(
       null,
-      account.address.value!.toString(),
+      account.toString(),
       app.toString()
     );
 
@@ -264,11 +263,11 @@ export default class MetaStore {
 
     return new Listing({
       token: new ERC1155Token(
-        Model.fromAddress(listing.token.contract_),
+        new Address(listing.token.contract_),
         listing.token.id
       ),
-      seller: Model.fromAddress(listing.seller),
-      app: Model.fromAddress(listing.app),
+      seller: new Address(listing.seller),
+      app: new Address(listing.app),
       price: listing.price,
       stockSize: listing.stockSize,
     });
@@ -282,11 +281,8 @@ export default class MetaStore {
     return this.contract.isAppActive(app.toString());
   }
 
-  async sellerApproved(seller: Model): Promise<boolean> {
-    return this.contract.isSellerApproved(
-      app.toString(),
-      seller.address.value!.toString()
-    );
+  async sellerApproved(seller: Address): Promise<boolean> {
+    return this.contract.isSellerApproved(app.toString(), seller.toString());
   }
 
   async findPrimaryListing(token: NFT): Promise<Listing | undefined> {
@@ -335,10 +331,10 @@ export default class MetaStore {
           seller: (e.args!.seller as string).toLowerCase(),
           listingId: Listing.idHex(
             new ERC1155Token(
-              Model.fromAddress(e.args!.token.contract_),
+              new Address(e.args!.token.contract_),
               e.args!.token.id
             ),
-            Model.fromAddress(e.args!.seller as string)
+            new Address(e.args!.seller as string)
           ),
         },
       ]

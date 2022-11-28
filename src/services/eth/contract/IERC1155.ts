@@ -2,10 +2,10 @@ import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
 import { Ierc1155 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc1155";
 import { abi } from "@/../lib/ipnft/waffle/IERC1155.json";
 import { BigNumber, Signer } from "ethers";
-import Model from "@/models/Account";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
 import { Provider } from "@ethersproject/abstract-provider";
+import { Address } from "../Address";
 
 export type Metadata = {
   $schema: string;
@@ -45,10 +45,10 @@ export type Transfer = EventBase & {
 };
 
 export class Token {
-  readonly contract: Model;
+  readonly contract: Address;
   readonly id: BigNumber;
 
-  constructor(contract: Model, id: BigNumber) {
+  constructor(contract: Address, id: BigNumber) {
     this.contract = contract;
     this.id = id;
   }

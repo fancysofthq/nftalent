@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import Model from "@/models/Account";
+import Account from "@/models/Account";
+import { onMounted } from "vue";
 import PFP from "./PFP.vue";
 
 interface Props {
-  account: Model;
+  account: Account;
   pfpClass?: string;
 }
 
 const { account, pfpClass } = defineProps<Props>();
+
+onMounted(() => account.resolve());
 </script>
 
 <template lang="pug">

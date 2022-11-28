@@ -3,7 +3,6 @@ import { Persona as BaseType } from "@/../lib/meta/waffle/types/Persona";
 import { abi } from "@/../lib/meta/waffle/Persona.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import Model from "@/models/Account";
 import { EventDB, Account as DbAccount } from "../event-db";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
@@ -59,14 +58,12 @@ export type SetAppMetadata = EventBase & {
 };
 
 export default class Persona {
-  static readonly account = Model.fromAddress(
-    import.meta.env.VITE_PERSONA_ADDRESS
-  );
+  static readonly address = new Address(import.meta.env.VITE_PERSONA_ADDRESS);
   private readonly _contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
     this._contract = new BaseType(
-      Persona.account.address.value!.toString(),
+      Persona.address.toString(),
       abi,
       providerOrSigner
     );
@@ -84,10 +81,7 @@ export default class Persona {
   }
 
   async setPfp(token: NFT) {
-    return this._contract.setBasicPfp(
-      token.contract.address.value!.toString(),
-      token.id
-    );
+    return this._contract.setBasicPfp(token.contract.toString(), token.id);
   }
 
   async setPfa(pfa: string) {

@@ -189,7 +189,7 @@ async function subscribeToFeed(
 
           if (e.from == AddressZero) {
             events.push(new EventWrapper(EventKind.IPNFT1155Mint, e));
-          } else if (e.to == IPNFT1155.account.address.value?.toString()) {
+          } else if (e.to == IPNFT1155.address.toString()) {
             events.push(new EventWrapper(EventKind.IPNFT1155Redeem, e));
           }
         }

@@ -23,11 +23,11 @@ export class Token {
   }
 
   toERC721Token(): ERC721Token {
-    return new ERC721Token(IPNFT721.account, cidToUint256(this.cid));
+    return new ERC721Token(IPNFT721.address, cidToUint256(this.cid));
   }
 
   toERC1155Token(): ERC1155Token {
-    return new ERC1155Token(IPNFT1155.account, cidToUint256(this.cid));
+    return new ERC1155Token(IPNFT1155.address, cidToUint256(this.cid));
   }
 }
 

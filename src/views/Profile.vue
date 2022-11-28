@@ -15,7 +15,7 @@ export async function fetchPfa(account: string): Promise<string | undefined> {
 
 <script setup lang="ts">
 import PFP from "@/components/shared/PFP.vue";
-import Model from "@/models/Account";
+import Account from "@/models/Account";
 import { computed, onMounted, type Ref, ref, type ShallowRef } from "vue";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
 import TokenModal from "@/components/modals/Token.vue";
@@ -31,7 +31,7 @@ import {
 } from "@heroicons/vue/24/outline";
 import * as api from "@/services/api";
 
-const props = defineProps<{ account: Model }>();
+const props = defineProps<{ account: Account }>();
 const tokens: ShallowRef<IPNFTModel[]> = ref([]);
 const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
 const pfa: Ref<string | undefined> = ref();

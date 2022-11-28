@@ -2,22 +2,19 @@ import { IpnftRedeemable as BaseType } from "@/../lib/ipnft/waffle/types/IpnftRe
 import { abi } from "@/../lib/ipnft/waffle/IPNFT1155.json";
 import { BigNumber, BigNumberish, BytesLike, ethers, Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
-import Model from "@/models/Account";
 import { EventDB } from "../event-db";
 import { Transfer } from "./IERC1155";
 import * as IPNFT from "./IPNFT";
 import { AddressZero } from "@ethersproject/constants";
+import { Address } from "../Address";
 
 export default class IPNFT1155 {
-  static readonly account = Model.fromAddress(
-    import.meta.env.VITE_IPNFT1155_ADDRESS
-  );
-
+  static readonly address = new Address(import.meta.env.VITE_IPNFT1155_ADDRESS);
   private readonly _contract: BaseType;
 
   constructor(providerOrSigner: Provider | Signer) {
     this._contract = new BaseType(
-      IPNFT1155.account.address.value!.toString(),
+      IPNFT1155.address.toString(),
       abi,
       providerOrSigner
     );
@@ -29,7 +26,7 @@ export default class IPNFT1155 {
   }
 
   async mint(
-    to: Model,
+    to: Address,
     token: IPNFT.Token,
     amount: BigNumberish,
     finalize: boolean,
@@ -47,8 +44,8 @@ export default class IPNFT1155 {
   }
 
   async safeTransferFrom(
-    from: Model,
-    to: Model,
+    from: Address,
+    to: Address,
     token: IPNFT.Token,
     amount: BigNumberish,
     data: BytesLike = []
@@ -62,11 +59,8 @@ export default class IPNFT1155 {
     );
   }
 
-  async balanceOf(account: Model, token: IPNFT.Token): Promise<BigNumber> {
-    return await this._contract.balanceOf(
-      account.address.value!.toString(),
-      token.id
-    );
+  async balanceOf(account: Address, token: IPNFT.Token): Promise<BigNumber> {
+    return await this._contract.balanceOf(account.toString(), token.id);
   }
 
   async totalSupply(token: IPNFT.Token): Promise<BigNumber> {
