@@ -2,7 +2,7 @@
 import { BigNumber, ethers } from "ethers";
 import { computed, type ComputedRef, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
-import * as Account from "@/models/Account";
+import Account from "@/models/Account";
 import IPNFTModel from "@/models/IPNFT";
 import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./History.vue";

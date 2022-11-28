@@ -1,6 +1,6 @@
 <script lang="ts">
 export class Collection {
-  readonly accounts: Account.default[];
+  readonly accounts: Account[];
 
   constructor(
     public readonly id: string,
@@ -16,7 +16,7 @@ export class Collection {
 </script>
 
 <script setup lang="ts">
-import * as Account from "@/models/Account";
+import Account from "@/models/Account";
 import PFP from "@/components/shared/PFP.vue";
 import { Address } from "@/services/eth/Address";
 import { onMounted, ref, type ShallowRef } from "vue";

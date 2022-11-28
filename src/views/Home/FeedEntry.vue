@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
-import * as Account from "@/models/Account";
+import Account from "@/models/Account";
 import IPNFT from "@/models/IPNFT";
 import Placeholder from "@/components/shared/Placeholder.vue";
 import Chip from "@/components/shared/Chip.vue";

@@ -3,6 +3,8 @@ import { computed, markRaw, ref, type Ref } from "vue";
 import { resolve as resolveENS } from "@/services/ensideas";
 
 export default class Account {
+  private static memoized = new Map<Address | string, Account>();
+
   readonly address: Ref<Address | undefined>;
   readonly ensName: Ref<string | null | undefined>;
 
@@ -12,12 +14,43 @@ export default class Account {
 
   private _resolvedPromise?: Promise<void>;
 
-  static fromAddress(address: Address | Uint8Array | Buffer | string): Account {
+  static getOrCreateFromAddress(
+    address: Address | Uint8Array | Buffer | string,
+    resolve = false
+  ): Account {
+    if (!(address instanceof Address)) address = new Address(address);
+
+    if (Account.memoized.has(address)) {
+      return Account.memoized.get(address)!;
+    }
+
+    const token = markRaw(Account.fromAddress(address));
+    Account.memoized.set(address, token);
+
+    if (resolve) token.resolve();
+    return token;
+  }
+
+  static getOrCreateFromEnsName(name: string, resolve = false): Account {
+    if (Account.memoized.has(name)) {
+      return Account.memoized.get(name)!;
+    }
+
+    const token = markRaw(Account.fromENSName(name));
+    Account.memoized.set(name, token);
+
+    if (resolve) token.resolve();
+    return token;
+  }
+
+  private static fromAddress(
+    address: Address | Uint8Array | Buffer | string
+  ): Account {
     if (!(address instanceof Address)) address = new Address(address);
     return new Account(ref(address), ref(undefined));
   }
 
-  static fromENSName(ensName: string): Account {
+  private static fromENSName(ensName: string): Account {
     return new Account(ref(undefined), ref(ensName));
   }
 
@@ -57,35 +90,4 @@ export default class Account {
     await this._resolvedPromise;
     return this;
   }
-}
-
-const memoized = new Map<Address | string, Account>();
-
-export function getOrCreateFromAddress(
-  address: Address | Uint8Array | Buffer | string,
-  resolve = false
-): Account {
-  if (!(address instanceof Address)) address = new Address(address);
-
-  if (memoized.has(address)) {
-    return memoized.get(address)!;
-  }
-
-  const token = markRaw(Account.fromAddress(address));
-  memoized.set(address, token);
-
-  if (resolve) token.resolve();
-  return token;
-}
-
-export function getOrCreateFromEnsName(name: string, resolve = false): Account {
-  if (memoized.has(name)) {
-    return memoized.get(name)!;
-  }
-
-  const token = markRaw(Account.fromENSName(name));
-  memoized.set(name, token);
-
-  if (resolve) token.resolve();
-  return token;
 }

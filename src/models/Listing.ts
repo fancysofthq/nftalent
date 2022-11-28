@@ -1,4 +1,4 @@
-import * as Account from "./Account";
+import Account from "./Account";
 import IPNFTModel, { getOrCreate as getOrCreateIPNFT } from "./IPNFT";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import edb from "@/services/eth/event-db";
@@ -11,8 +11,8 @@ import { markRaw } from "@vue/reactivity";
 export default class Listing {
   readonly id: BytesLike;
   readonly token: IPNFTModel;
-  readonly seller: Account.default;
-  readonly app: Account.default;
+  readonly seller: Account;
+  readonly app: Account;
   readonly priceRef: ShallowRef<BigNumber>;
   readonly stockSizeRef: ShallowRef<BigNumber>;
 

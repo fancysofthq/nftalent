@@ -7,7 +7,7 @@ import Token from "./views/Token.vue";
 import { CID } from "multiformats";
 import { base32 } from "multiformats/bases/base32";
 import { getOrCreate as getOrCreateIPNFT } from "./models/IPNFT";
-import * as Account from "./models/Account";
+import Account from "./models/Account";
 import Explore from "./views/Explore.vue";
 
 export default createRouter({
