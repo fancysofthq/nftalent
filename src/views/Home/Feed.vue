@@ -137,7 +137,10 @@ async function subscribeToFeed(
       edb.iterateEventsIndex(
         "MetaStore.List",
         "blockNumber",
-        IDBKeyRange.bound(listBlock, Number.MAX_SAFE_INTEGER),
+        IDBKeyRange.bound(
+          [eth.app.toString(), listBlock],
+          [eth.app.toString(), Number.MAX_SAFE_INTEGER]
+        ),
         "next",
         (e) => {
           listBlock = e.blockNumber + 1;

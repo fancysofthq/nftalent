@@ -22,8 +22,12 @@ onMounted(() => {
 
   edb.iterateEventsIndex(
     "MetaStore.List",
-    "tokenId",
-    IPNFT.cidToUint256(props.ipnft.token.cid)._hex,
+    "token",
+    [
+      eth.app.toString(),
+      eth.ipnft1155.address.toString(),
+      IPNFT.cidToUint256(props.ipnft.token.cid)._hex,
+    ],
     "next",
     (event) => {
       const listing = Listing.getOrCreate(RawListing.fromDBEvent(event));

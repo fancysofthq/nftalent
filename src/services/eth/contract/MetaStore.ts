@@ -146,10 +146,10 @@ export type List = EventBase & {
  */
 export type Replenish = EventBase & {
   token: {
-    // contract: string; // NOTE: The contract address is well-known
+    contract: string;
     id: string;
   };
-  // appAddress: string; // NOTE: It won't contain other app's listings anyway
+  appAddress: string;
   listingId: string;
   price: BigInt;
   amount: BigInt;
@@ -172,10 +172,10 @@ export type Replenish = EventBase & {
  */
 export type Withdraw = EventBase & {
   token: {
-    // contract: string; // NOTE: The contract address is well-known
+    contract: string;
     id: string;
   };
-  // appAddress: string; // NOTE: It won't contain other app's listings anyway
+  appAddress: string;
   listingId: string;
   to: string;
   amount: BigInt;
@@ -202,7 +202,7 @@ export type Withdraw = EventBase & {
  */
 export type Purchase = EventBase & {
   token: {
-    // contract: string; // NOTE: The contract address is well-known
+    contract: string;
     id: string;
   };
   listingId: string;
@@ -211,7 +211,7 @@ export type Purchase = EventBase & {
   income: BigInt;
   royaltyAddress: string;
   royaltyValue: BigInt;
-  // appAddress: string; // NOTE: It won't contain other app's listings anyway
+  appAddress: string;
   appFee: BigInt;
   baseFee: BigInt;
   profit: BigInt;
@@ -323,7 +323,7 @@ export default class MetaStore {
           logIndex: e.logIndex,
 
           token: {
-            contract: (e.args!.seller as string).toLowerCase(),
+            contract: (e.args!.token.contract_ as string).toLowerCase(),
             id: (e.args!.token.id as BigNumber)._hex,
           },
           seller: (e.args!.seller as string).toLowerCase(),
@@ -354,9 +354,11 @@ export default class MetaStore {
           logIndex: e.logIndex,
 
           token: {
+            contract: (e.args!.token.contract_ as string).toLowerCase(),
             id: (e.args!.token.id as BigNumber)._hex,
           },
           listingId: (e.args!.listingId as string).toLowerCase(),
+          appAddress: (e.args!.appAddress as string).toLowerCase(),
           price: (e.args!.price as BigNumber).toBigInt(),
           amount: (e.args!.amount as BigNumber).toBigInt(),
         },
@@ -378,8 +380,10 @@ export default class MetaStore {
           logIndex: e.logIndex,
 
           token: {
+            contract: (e.args!.token.contract_ as string).toLowerCase(),
             id: (e.args!.token.id as BigNumber)._hex,
           },
+          appAddress: (e.args!.appAddress as string).toLowerCase(),
           listingId: (e.args!.listingId as string).toLowerCase(),
           to: (e.args!.to as string).toLowerCase(),
           amount: (e.args!.amount as BigNumber).toBigInt(),
@@ -414,6 +418,7 @@ export default class MetaStore {
           logIndex: e.logIndex,
 
           token: {
+            contract: (e.args!.token.contract_ as string).toLowerCase(),
             id: (e.args!.token.id as BigNumber)._hex,
           },
           listingId: (e.args!.listingId as string).toLowerCase(),
@@ -422,6 +427,7 @@ export default class MetaStore {
           income: BigInt(e.args!.income._hex),
           royaltyAddress: e.args!.royaltyAddress.toLowerCase(),
           royaltyValue: BigInt(e.args!.royaltyValue._hex),
+          appAddress: e.args!.appAddress.toLowerCase(),
           appFee: BigInt(e.args!.appFee._hex),
           baseFee: BigInt(e.args!.baseFee._hex),
           profit: BigInt(e.args!.profit._hex),

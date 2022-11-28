@@ -200,10 +200,20 @@ async function subscribeToFeed(
     promises.push(
       edb.iterateEventsIndex(
         "MetaStore.List",
-        "tokenId-blockNumber",
+        "token-blockNumber",
         IDBKeyRange.bound(
-          [filter.id._hex, listBlock],
-          [filter.id._hex, Number.MAX_SAFE_INTEGER]
+          [
+            eth.app.toString(),
+            eth.ipnft1155.address.toString(),
+            filter.id._hex,
+            listBlock,
+          ],
+          [
+            eth.app.toString(),
+            eth.ipnft1155.address.toString(),
+            filter.id._hex,
+            Number.MAX_SAFE_INTEGER,
+          ]
         ),
         "next",
         (e) => {
@@ -217,10 +227,20 @@ async function subscribeToFeed(
     promises.push(
       edb.iterateEventsIndex(
         "MetaStore.Purchase",
-        "tokenId-blockNumber",
+        "token-blockNumber",
         IDBKeyRange.bound(
-          [filter.id._hex, purchaseBlock],
-          [filter.id._hex, Number.MAX_SAFE_INTEGER]
+          [
+            eth.app.toString(),
+            eth.ipnft1155.address.toString(),
+            filter.id._hex,
+            purchaseBlock,
+          ],
+          [
+            eth.app.toString(),
+            eth.ipnft1155.address.toString(),
+            filter.id._hex,
+            Number.MAX_SAFE_INTEGER,
+          ]
         ),
         "next",
         (e) => {

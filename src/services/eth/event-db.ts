@@ -109,12 +109,31 @@ interface Schema extends DBSchema {
     key: [number, number]; // blockNumber + logIndex
     value: List;
     indexes: {
-      blockNumber: number;
+      blockNumber: [
+        string, // appAddress
+        number // blockNumber
+      ];
       listingId: string;
-      tokenId: string;
-      seller: string;
-      ["seller-blockNumber"]: [string, number];
-      ["tokenId-blockNumber"]: [string, number];
+      token: [
+        string, // appAddress
+        string, // token.contract
+        string // token.id
+      ];
+      seller: [
+        string, // appAddress
+        string // seller
+      ];
+      ["token-blockNumber"]: [
+        string, // appAddress
+        string, // token.contract
+        string, // token.id
+        number // blockNumber
+      ];
+      ["seller-blockNumber"]: [
+        string, // appAddress
+        string, // seller
+        number // blockNumber
+      ];
     };
   };
 
@@ -122,10 +141,7 @@ interface Schema extends DBSchema {
     key: [number, number]; // blockNumber + logIndex
     value: Replenish;
     indexes: {
-      blockNumber: number;
-      tokendId: string;
       listingId: string;
-      ["tokenId-blockNumber"]: [string, number];
       ["listingId-blockNumber"]: [string, number];
     };
   };
@@ -134,13 +150,8 @@ interface Schema extends DBSchema {
     key: [number, number]; // blockNumber + logIndex
     value: Withdraw;
     indexes: {
-      blockNumber: number;
-      tokendId: string;
       listingId: string;
-      to: string;
-      ["tokenId-blockNumber"]: [string, number];
       ["listingId-blockNumber"]: [string, number];
-      ["to-blockNumber"]: [string, number];
     };
   };
 
@@ -148,13 +159,32 @@ interface Schema extends DBSchema {
     key: [number, number]; // blockNumber + logIndex
     value: Purchase;
     indexes: {
-      blockNumber: number;
-      tokenId: string;
+      blockNumber: [
+        string, // appAddress
+        number // blockNumber
+      ];
+      token: [
+        string, // appAddress
+        string, // token.contract
+        string // token.id
+      ];
       listingId: string;
-      buyer: string;
-      ["tokenId-blockNumber"]: [string, number];
+      buyer: [
+        string, // appAddress
+        string // buyer
+      ];
+      ["token-blockNumber"]: [
+        string, // appAddress
+        string, // token.contract
+        string, // token.id
+        number // blockNumber
+      ];
       ["listingId-blockNumber"]: [string, number];
-      ["buyer-blockNumber"]: [string, number];
+      ["buyer-blockNumber"]: [
+        string, // appAddress
+        string, // buyer
+        number // blockNumber
+      ];
     };
   };
 
@@ -277,18 +307,26 @@ export class EventDB {
             keyPath: ["blockNumber", "logIndex"],
           });
 
-          e3.createIndex("blockNumber", "blockNumber");
+          e3.createIndex("blockNumber", ["appAddress", "blockNumber"]);
           e3.createIndex("listingId", "listingId");
-          e3.createIndex("tokenId", "token.id");
-          e3.createIndex("seller", "seller");
-          e3.createIndex("seller-blockNumber", ["seller", "blockNumber"]);
-          e3.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
+          e3.createIndex("token", ["appAddress", "token.contract", "token.id"]);
+          e3.createIndex("seller", ["appAddress", "seller"]);
+          e3.createIndex("seller-blockNumber", [
+            "appAddress",
+            "seller",
+            "blockNumber",
+          ]);
+          e3.createIndex("token-blockNumber", [
+            "appAddress",
+            "token.contract",
+            "token.id",
+            "blockNumber",
+          ]);
 
           const e4 = db.createObjectStore("MetaStore.Replenish", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
-          e4.createIndex("blockNumber", "blockNumber");
           e4.createIndex("listingId", "listingId");
           e4.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
 
@@ -296,22 +334,29 @@ export class EventDB {
             keyPath: ["blockNumber", "logIndex"],
           });
 
-          e5.createIndex("blockNumber", "blockNumber");
           e5.createIndex("listingId", "listingId");
-          e5.createIndex("to", "to");
           e5.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-          e5.createIndex("to-blockNumber", ["to", "blockNumber"]);
 
           const e6 = db.createObjectStore("MetaStore.Purchase", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
-          e6.createIndex("blockNumber", "blockNumber");
+          e6.createIndex("blockNumber", ["appAddress", "blockNumber"]);
+          e6.createIndex("token", ["appAddress", "token.contract", "token.id"]);
           e6.createIndex("listingId", "listingId");
-          e6.createIndex("buyer", "buyer");
-          e6.createIndex("tokenId-blockNumber", ["token.id", "blockNumber"]);
+          e6.createIndex("buyer", ["appAddress", "buyer"]);
+          e6.createIndex("token-blockNumber", [
+            "appAddress",
+            "token.contract",
+            "token.id",
+            "blockNumber",
+          ]);
           e6.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
-          e6.createIndex("buyer-blockNumber", ["buyer", "blockNumber"]);
+          e6.createIndex("buyer-blockNumber", [
+            "appAddress",
+            "buyer",
+            "blockNumber",
+          ]);
 
           const o1 = db.createObjectStore("IPNFT", {
             keyPath: "id",
