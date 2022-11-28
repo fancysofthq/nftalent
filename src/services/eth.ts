@@ -46,10 +46,25 @@ export async function login() {
   // See https://docs.ethers.io/v5/concepts/best-practices/
   //
 
-  ipnft721 = new IPNFT721(provider.value.getSigner());
-  ipnft1155 = new IPNFT1155(provider.value.getSigner());
-  metaStore = new MetaStore(provider.value.getSigner());
-  persona = new Persona(provider.value.getSigner());
+  ipnft721 = new IPNFT721(
+    new Address(import.meta.env.VITE_IPNFT721_ADDRESS),
+    provider.value.getSigner()
+  );
+
+  ipnft1155 = new IPNFT1155(
+    new Address(import.meta.env.VITE_IPNFT1155_ADDRESS),
+    provider.value.getSigner()
+  );
+
+  metaStore = new MetaStore(
+    new Address(import.meta.env.VITE_META_STORE_ADDRESS),
+    provider.value.getSigner()
+  );
+
+  persona = new Persona(
+    new Address(import.meta.env.VITE_PERSONA_ADDRESS),
+    provider.value.getSigner()
+  );
 
   provider.value.getBlockNumber().then((untilBlock) => {
     console.debug("Syncing events until block", untilBlock);

@@ -6,8 +6,6 @@ import * as dagCbor from "@ipld/dag-cbor";
 import { Token as ERC721Token } from "./IERC721";
 import { Token as ERC1155Token } from "./IERC1155";
 import { BigNumber } from "@ethersproject/bignumber";
-import IPNFT721 from "./IPNFT721";
-import IPNFT1155 from "./IPNFT1155";
 import { Buffer } from "buffer";
 import { Address } from "../Address";
 
@@ -22,12 +20,12 @@ export class Token {
     return cidToUint256(this.cid);
   }
 
-  toERC721Token(): ERC721Token {
-    return new ERC721Token(IPNFT721.address, cidToUint256(this.cid));
+  toERC721Token(contract: Address): ERC721Token {
+    return new ERC721Token(contract, cidToUint256(this.cid));
   }
 
-  toERC1155Token(): ERC1155Token {
-    return new ERC1155Token(IPNFT1155.address, cidToUint256(this.cid));
+  toERC1155Token(contract: Address): ERC1155Token {
+    return new ERC1155Token(contract, cidToUint256(this.cid));
   }
 }
 

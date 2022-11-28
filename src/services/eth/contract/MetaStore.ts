@@ -63,7 +63,7 @@ export class Listing {
   static fromDBEvent(e: List): Listing {
     return new Listing({
       token: {
-        contract: IPNFT1155.address,
+        contract: new Address(e.token.contract),
         id: BigNumber.from(e.token.id),
       },
       seller: new Address(e.seller),
@@ -122,11 +122,11 @@ export class Listing {
  */
 export type List = EventBase & {
   token: {
-    // contract: string; // NOTE: The contract address is well-known
+    contract: string;
     id: string;
   };
   seller: string;
-  // appAddress: string; // NOTE: It won't contain other app's listings anyway
+  appAddress: string;
   listingId: string; // NOTE: Generated
 };
 
@@ -218,18 +218,13 @@ export type Purchase = EventBase & {
 };
 
 export default class MetaStore {
-  static readonly address = new Address(
-    import.meta.env.VITE_META_STORE_ADDRESS
-  );
-
   readonly contract: BaseType;
 
-  constructor(providerOrSigner: Provider | Signer) {
-    this.contract = new BaseType(
-      MetaStore.address.toString(),
-      abi,
-      providerOrSigner
-    );
+  constructor(
+    public readonly address: Address,
+    providerOrSigner: Provider | Signer
+  ) {
+    this.contract = new BaseType(address.toString(), abi, providerOrSigner);
   }
 
   sync(edb: EventDB, untilBlock: number) {
@@ -327,8 +322,12 @@ export default class MetaStore {
           blockNumber: e.blockNumber,
           logIndex: e.logIndex,
 
-          token: { id: (e.args!.token.id as BigNumber)._hex },
+          token: {
+            contract: (e.args!.seller as string).toLowerCase(),
+            id: (e.args!.token.id as BigNumber)._hex,
+          },
           seller: (e.args!.seller as string).toLowerCase(),
+          appAddress: (e.args!.appAddress as string).toLowerCase(),
           listingId: Listing.idHex(
             new ERC1155Token(
               new Address(e.args!.token.contract_),

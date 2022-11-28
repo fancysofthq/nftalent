@@ -3,6 +3,7 @@ import { abi } from "@/../lib/ipnft/waffle/IERC1155MetadataURI.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Token } from "./IERC1155";
+import { Address } from "../Address";
 
 export default class IERC1155MetadataURI {
   private readonly _contract: BaseType;
@@ -11,8 +12,11 @@ export default class IERC1155MetadataURI {
     return "0x0e89341c";
   }
 
-  constructor(address: string, providerOrSigner: Provider | Signer) {
-    this._contract = new BaseType(address, abi, providerOrSigner);
+  constructor(
+    public readonly address: Address,
+    providerOrSigner: Provider | Signer
+  ) {
+    this._contract = new BaseType(address.toString(), abi, providerOrSigner);
   }
 
   async uri(token: Token): Promise<string> {

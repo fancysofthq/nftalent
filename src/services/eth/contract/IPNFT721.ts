@@ -13,15 +13,13 @@ import { AddressZero } from "@ethersproject/constants";
 import { Address } from "../Address";
 
 export default class IPNFT721 {
-  static readonly address = new Address(import.meta.env.VITE_IPNFT721_ADDRESS);
   private readonly _contract: BaseType;
 
-  constructor(providerOrSigner: Provider | Signer) {
-    this._contract = new BaseType(
-      IPNFT721.address.toString(),
-      abi,
-      providerOrSigner
-    );
+  constructor(
+    public readonly address: Address,
+    providerOrSigner: Provider | Signer
+  ) {
+    this._contract = new BaseType(address.toString(), abi, providerOrSigner);
   }
 
   sync(edb: EventDB, untilBlock: number) {

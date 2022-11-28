@@ -24,7 +24,7 @@ const canTransact = computed(
 async function transact() {
   const tx = await eth.ipnft1155.safeTransferFrom(
     eth.account.value!.address.value!,
-    IPNFTRedeemable.address,
+    eth.ipnft1155.address,
     props.ipnft.token,
     BigNumber.from(redeemAmount.value)
   );

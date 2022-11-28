@@ -47,7 +47,10 @@ export class Token {
 export default class IERC721 {
   private readonly _contract: BaseType;
 
-  constructor(address: string, providerOrSigner: Provider | Signer) {
-    this._contract = new BaseType(address, abi, providerOrSigner);
+  constructor(
+    public readonly address: Address,
+    providerOrSigner: Provider | Signer
+  ) {
+    this._contract = new BaseType(address.toString(), abi, providerOrSigner);
   }
 }

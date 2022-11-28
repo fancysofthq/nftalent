@@ -10,7 +10,9 @@ const isPrimary = ref(false);
 
 eth.onConnect(() => {
   eth.metaStore
-    .findPrimaryListing(props.listing.token.token.toERC1155Token().toNFT())
+    .findPrimaryListing(
+      props.listing.token.token.toERC1155Token(eth.ipnft1155.address).toNFT()
+    )
     .then((listing) => {
       isPrimary.value = listing?.id === props.listing.id;
     });

@@ -153,7 +153,9 @@ eth.onConnect(() => {
 
 async function setPfp() {
   if (!maySetPfp.value) throw "Not allowed";
-  const tx = await eth.persona.setPfp(token.token.toERC721Token().toNFT());
+  const tx = await eth.persona.setPfp(
+    token.token.toERC721Token(eth.ipnft721.address).toNFT()
+  );
   console.debug("Set PFP", tx);
 }
 

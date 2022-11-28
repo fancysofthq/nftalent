@@ -57,7 +57,7 @@ import edb, {
 import { timeout } from "@/util";
 import { BigNumber } from "ethers";
 import { AddressZero } from "@ethersproject/constants";
-import IPNFT1155 from "@/services/eth/contract/IPNFT1155";
+import * as eth from "@/services/eth";
 
 export enum EventKind {
   IPNFT721Mint,
@@ -189,7 +189,7 @@ async function subscribeToFeed(
 
           if (e.from == AddressZero) {
             events.push(new EventWrapper(EventKind.IPNFT1155Mint, e));
-          } else if (e.to == IPNFT1155.address.toString()) {
+          } else if (e.to == eth.ipnft1155.address.toString()) {
             events.push(new EventWrapper(EventKind.IPNFT1155Redeem, e));
           }
         }

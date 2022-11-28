@@ -467,7 +467,7 @@ async function mint1155(
   price: BigNumberish
 ): Promise<ContractTransaction> {
   return await eth.ipnft1155.mint(
-    MetaStore.address,
+    eth.metaStore.address,
     new IPNFT.Token(cid),
     amount,
     finalize,
@@ -573,7 +573,7 @@ async function uploadToIpfs(
 
   const ipnftTag = new IPNFT.Tag(
     (await eth.provider.value!.getNetwork()).chainId,
-    IPNFT721.address,
+    eth.ipnft721.address,
     eth.account.value!.address.value!,
     await eth.ipnft721.minterNonce(eth.account.value!.address.value!)
   );

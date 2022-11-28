@@ -24,12 +24,15 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
     accountObj?.personas.basic?.pfp;
 
   if (pfp) {
-    const erc165 = new IERC165(pfp.contractAddress, eth.provider.value!);
+    const erc165 = new IERC165(
+      new Address(pfp.contractAddress),
+      eth.provider.value!
+    );
     let rawTokenURI: string;
 
     if (await erc165.supportsInterface(IERC721Metadata.interfaceId)) {
       const erc721 = new IERC721Metadata(
-        pfp.contractAddress,
+        new Address(pfp.contractAddress),
         eth.provider.value!
       );
 
@@ -45,7 +48,7 @@ export async function queryPfpUrl(account: string): Promise<URL | undefined> {
       await erc165.supportsInterface(IERC1155MetadataURI.interfaceId)
     ) {
       const nft = new IERC1155MetadataURI(
-        pfp.contractAddress,
+        new Address(pfp.contractAddress),
         eth.provider.value!
       );
 

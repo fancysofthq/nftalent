@@ -58,15 +58,13 @@ export type SetAppMetadata = EventBase & {
 };
 
 export default class Persona {
-  static readonly address = new Address(import.meta.env.VITE_PERSONA_ADDRESS);
   private readonly _contract: BaseType;
 
-  constructor(providerOrSigner: Provider | Signer) {
-    this._contract = new BaseType(
-      Persona.address.toString(),
-      abi,
-      providerOrSigner
-    );
+  constructor(
+    public readonly address: Address,
+    providerOrSigner: Provider | Signer
+  ) {
+    this._contract = new BaseType(address.toString(), abi, providerOrSigner);
   }
 
   sync(edb: EventDB, untilBlock: number, app: Address) {
