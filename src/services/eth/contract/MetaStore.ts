@@ -195,7 +195,7 @@ export type Withdraw = EventBase & {
  *     uint256 royaltyValue,
  *     address indexed appAddress,
  *     uint256 appFee,
- *     uint256 baseFee,
+ *     uint256 appGratitude,
  *     uint256 profit
  * );
  * ```
@@ -213,7 +213,7 @@ export type Purchase = EventBase & {
   royaltyValue: BigInt;
   appAddress: string;
   appFee: BigInt;
-  baseFee: BigInt;
+  appGratitude: BigInt;
   profit: BigInt;
 };
 
@@ -429,7 +429,7 @@ export default class MetaStore {
           royaltyValue: BigInt(e.args!.royaltyValue._hex),
           appAddress: e.args!.appAddress.toLowerCase(),
           appFee: BigInt(e.args!.appFee._hex),
-          baseFee: BigInt(e.args!.baseFee._hex),
+          appGratitude: BigInt(e.args!.appGratitude._hex),
           profit: BigInt(e.args!.profit._hex),
         },
       ]
