@@ -2,7 +2,8 @@ export function timeout(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function notNull<T>(object: T | undefined): T {
+export function notNull<T>(object: T | null | undefined): T {
+  if (!object) throw new Error("Object is null");
   return object!;
 }
 
