@@ -26,7 +26,7 @@ onMounted(() => {
     IPNFT.cidToUint256(props.ipnft.token.cid)._hex,
     "next",
     (event) => {
-      const listing = markRaw(new Listing(RawListing.fromDBEvent(event)));
+      const listing = Listing.getOrCreate(RawListing.fromDBEvent(event));
       listings.value.push(listing);
       listing.fetchData();
     }

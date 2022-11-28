@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, type Ref, ref, onUnmounted } from "vue";
 import { uint256ToCID } from "@/services/eth/contract/IPNFT";
-import IPNFT, { getOrCreate } from "@/models/IPNFT";
+import IPNFT from "@/models/IPNFT";
 import Entry from "./FeedEntry.vue";
 
 type Entry = {
@@ -21,7 +21,7 @@ onMounted(async () => {
       entries.value.unshift(
         ..._entries.map((e) => ({
           event: e,
-          token: getOrCreate(uint256ToCID(e.tokenId)),
+          token: IPNFT.getOrCreate(uint256ToCID(e.tokenId)),
         }))
       );
     },

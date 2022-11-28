@@ -38,6 +38,21 @@ export default class IPNFT {
   private _ipnft1155FinalizedPromise?: Promise<boolean | null>;
   private _ipnft1155ExpiredAtPromise?: Promise<Date | null>;
 
+  private static memoized = new Map<CID, IPNFT>();
+
+  /**
+   * Get existing token or create new instance.
+   */
+  static getOrCreate(cid: CID): IPNFT {
+    if (IPNFT.memoized.has(cid)) {
+      return IPNFT.memoized.get(cid)!;
+    }
+
+    const token = markRaw(new IPNFT(new IPNFTEth.Token(cid)));
+    IPNFT.memoized.set(cid, token);
+    return token;
+  }
+
   constructor(
     token: IPNFTEth.Token,
     {
@@ -217,19 +232,6 @@ export default class IPNFT {
       await (this._ipnft1155ExpiredAtPromise ||= (async () =>
         await eth.ipnft1155.expiredAt(this.token))());
   }
-}
-
-const memoized = new Map<CID, IPNFT>();
-
-// Get existing token or create new instance
-export function getOrCreate(cid: CID): IPNFT {
-  if (memoized.has(cid)) {
-    return memoized.get(cid)!;
-  }
-
-  const token = markRaw(new IPNFT(new IPNFTEth.Token(cid)));
-  memoized.set(cid, token);
-  return token;
 }
 
 async function ipnft721MintedAtBlock(

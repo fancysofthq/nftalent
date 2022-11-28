@@ -19,7 +19,7 @@ import Account from "@/models/Account";
 import { computed, onMounted, type Ref, ref, type ShallowRef } from "vue";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
 import TokenModal from "@/components/modals/Token.vue";
-import IPNFTModel, { getOrCreate as getOrCreateIPNFT } from "@/models/IPNFT";
+import IPNFTModel from "@/models/IPNFT";
 import edb from "@/services/eth/event-db";
 import * as IPNFT from "@/services/eth/contract/IPNFT";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -60,7 +60,9 @@ onMounted(async () => {
     props.account.address.value!.toString(),
     "prev",
     (t) => {
-      const token = getOrCreateIPNFT(IPNFT.uint256ToCID(BigNumber.from(t.id)));
+      const token = IPNFTModel.getOrCreate(
+        IPNFT.uint256ToCID(BigNumber.from(t.id))
+      );
       token.ipnft1155ExpiredAt = t.ipnft1155ExpiredAt;
       token.ipnft1155Finalized = t.ipnft1155IsFinalized;
       tokens.value.push(token);
