@@ -27,7 +27,6 @@ const priceEth: Ref<number> = ref(0.025);
 const tags: Ref<string[]> = ref([]);
 const editions: Ref<number> = ref(0);
 const royalty: Ref<number> = ref(10);
-const isSellerApproved = ref(false);
 
 enum Tab {
   CollectibeImage,
@@ -85,7 +84,6 @@ const cid: Ref<CID | undefined> = ref();
 
 const isCurrentlyMintable = computed(() => {
   return (
-    isSellerApproved.value &&
     !mintInProgress.value &&
     web3StorageApiKey.value &&
     previewImage.value !== undefined &&
@@ -201,12 +199,6 @@ function date2InputDate(date: Date | undefined): string {
     date.getDate().toString().padStart(2, "0")
   );
 }
-
-eth.onConnect(async () => {
-  isSellerApproved.value = await eth.metaStore.sellerApproved(
-    eth.account.value!
-  );
-});
 </script>
 
 <template lang="pug">
@@ -386,10 +378,6 @@ eth.onConnect(async () => {
             span 
               router-link.daisy-link(to="/settings") Web3 storage API key
               span &nbsp;is {{ web3StorageApiKey ? "set" : "not set" }}
-          .flex.gap-2
-            span —
-            span.text-lg {{ isSellerApproved ? "✅" : "❌" }}
-            span {{ isSellerApproved ? "Seller approved" : "Seller is not approved" }}
 
         label.daisy-label
           span.daisy-label-text.font-semibold 
