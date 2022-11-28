@@ -43,7 +43,7 @@ eth.onConnect(() => props.ipnft.fetchEthMetadata());
       span.font-bold.text-lg.min-w-max 💎 Token
       router-link.text-sm.text-base-content.text-opacity-75.break-all.daisy-link-hover(
         :to="'/' + props.ipnft.token.cid.toString()"
-      ) {{ props.ipnft.token.cid }}
+      ) /{{ props.ipnft.token.cid }}
     Token.border.rounded-lg(
       :token="ipnft"
       :showRedeemButton="true"

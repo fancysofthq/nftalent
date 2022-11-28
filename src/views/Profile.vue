@@ -134,9 +134,9 @@ async function unsubscribe() {
   .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
     h2.flex.gap-2.items-baseline
       span.font-bold.text-lg.min-w-max 🎭 Profile
-      router-link.text-sm.text-base-content.text-opacity-75.break-all(
+      router-link.daisy-link-hover.text-sm.text-base-content.text-opacity-75.break-all(
         :to="'/' + (account.ensName.value || account.address.value?.toString())"
-      ) {{ account.ensName.value || account.address.value?.toString() }}
+      ) /{{ account.ensName.value || account.address.value?.toString() }}
     .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-1
       PFP.h-32.w-32.bg-base-200.mb-2(:account="account")
 
