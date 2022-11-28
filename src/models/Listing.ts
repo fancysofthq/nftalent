@@ -63,6 +63,9 @@ export default class Listing {
   }
 
   async fetchData() {
+    let priceTemp = BigNumber.from(0);
+    let stockSizeTemp = BigNumber.from(0);
+
     const promises = [
       edb.iterateEventsIndex(
         "MetaStore.Replenish",
@@ -70,11 +73,8 @@ export default class Listing {
         this.id.toString(),
         "next",
         (event) => {
-          this.stockSizeRef.value = this.stockSizeRef.value.add(
-            BigNumber.from(event.amount)
-          );
-
-          this.priceRef.value = BigNumber.from(event.price);
+          priceTemp = BigNumber.from(event.price);
+          stockSizeTemp = stockSizeTemp.add(BigNumber.from(event.amount));
         }
       ),
 
@@ -84,9 +84,7 @@ export default class Listing {
         this.id.toString(),
         "next",
         (event) => {
-          this.stockSizeRef.value = this.stockSizeRef.value.sub(
-            BigNumber.from(event.amount)
-          );
+          stockSizeTemp = stockSizeTemp.sub(BigNumber.from(event.amount));
         }
       ),
 
@@ -96,13 +94,14 @@ export default class Listing {
         this.id.toString(),
         "next",
         (event) => {
-          this.stockSizeRef.value = this.stockSizeRef.value.sub(
-            BigNumber.from(event.amount)
-          );
+          stockSizeTemp = stockSizeTemp.sub(BigNumber.from(event.amount));
         }
       ),
     ];
 
     await Promise.all(promises);
+
+    this.priceRef.value = priceTemp;
+    this.stockSizeRef.value = stockSizeTemp;
   }
 }
