@@ -106,7 +106,7 @@ onMounted(() => {
 });
 
 async function queryPfp() {
-  const url = await queryPfpUrl(props.account.toString());
+  const url = await queryPfpUrl(props.account.address.value!.toString());
   if (url) img.value = IPFS.processUri(url);
 }
 </script>
