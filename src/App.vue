@@ -9,7 +9,7 @@ onMounted(eth.tryLogin);
 
 <template lang="pug">
 HeaderVue
-router-view
+router-view(:key="$route.path")
 FooterVue
 </template>
 
