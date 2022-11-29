@@ -2,8 +2,6 @@
 export enum Kind {
   Full,
   Card,
-  FeedEntry,
-  Thumbnail,
 }
 </script>
 
@@ -63,28 +61,18 @@ const rootClass = computed(() => {
     }
     case Kind.Card:
       return "grid grid-cols-1";
-    case Kind.FeedEntry:
-      return "grid grid-cols-10";
-    case Kind.Thumbnail:
-      return "grid grid-cols-1";
   }
 });
 
 const imgWrapperClass = computed(() => {
   switch (kind) {
     case Kind.Full:
-      if (token.metadata?.$schema == "nftalent/collectible/image?v=1") {
-        return "col-span-1";
-      } else if (token.ipnft1155ExpiredAt) {
-        return "col-span-3 sm_col-span-3";
+      if (token.ipnft1155ExpiredAt) {
+        return "col-span-3";
       } else {
-        return "col-span-1 sm_col-span-2";
+        return "col-span-1";
       }
     case Kind.Card:
-      return "col-span-1";
-    case Kind.FeedEntry:
-      return "col-span-2";
-    case Kind.Thumbnail:
       return "col-span-1";
   }
 });
@@ -94,13 +82,9 @@ const infoClass = computed(() => {
     case Kind.Full:
       if (token.ipnft1155ExpiredAt) {
         return "col-span-8";
-      } else {
-        return "";
       }
     case Kind.Card:
       return "justify-between";
-    case Kind.FeedEntry:
-      return "col-span-8 justify-center";
   }
 });
 
@@ -124,9 +108,7 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
       }
 
       // For other kinds, return the preview image
-      case Kind.Card:
-      case Kind.FeedEntry:
-      case Kind.Thumbnail: {
+      case Kind.Card: {
         if (metadata.image) {
           return urlFromImage(metadata.image);
         }
@@ -188,15 +170,15 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
       @click.exact.prevent="emit('clickInterest')"
     )
       .w-full.h-full.bg-checkerboard.bg-fixed(v-if="imageUrl")
-        img.w-full.h-full(
+        img.w-full.h-full.object-contain(
           :src="imageUrl.toString()"
-          :class="{ 'aspect-square object-contain': isRedeemable || kind !== Kind.Full }"
+          :class="{ 'aspect-square': isRedeemable || kind === Kind.Card }"
         )
       Placeholder.w-full.h-full.aspect-square.object-cover(
         v-else
         :animate="animatePlaceholder"
         :rounded="false"
-        :class="{ 'aspect-square object-contain': isRedeemable || kind !== Kind.Full }"
+        :class="{ 'aspect-square': isRedeemable || kind === Kind.Card }"
       )
 
   // Information
@@ -262,7 +244,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
 
       // Mint data
       .leading-tight.text-xs.text-base-content.text-opacity-75.whitespace-normal(
-        v-if="kind === Kind.Full || kind === Kind.Card || kind === Kind.Thumbnail"
+        v-if="kind === Kind.Full || kind === Kind.Card"
       )
         span.align-middle &copy;&nbsp;
         Chip.align-middle.h-4.bg-base-200.text-opacity-100.text-xs(
