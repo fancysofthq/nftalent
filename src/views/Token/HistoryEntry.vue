@@ -68,7 +68,7 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
     case EventKind.IPNFT1155Mint:
       return props.event.asIPNFT1155Mint.value;
     case EventKind.MetaStoreList:
-      return 0n; // TODO:
+      return BigInt(0); // TODO:
     case EventKind.MetaStorePurchase:
       return props.event.asMetaStorePurchase.amount;
     case EventKind.IPNFT1155Redeem:
