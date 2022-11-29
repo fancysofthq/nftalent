@@ -90,31 +90,38 @@ import * as IPFS from "@/services/ipfs";
 import IERC1155MetadataURI from "@/services/eth/contract/IERC1155MetadataURI";
 import { Address } from "@/services/eth/Address";
 
-const props = defineProps<{ account: Account.default }>();
+const { account } = defineProps<{
+  account: Account.default;
+}>();
+
 const img: Ref<URL | undefined> = ref();
 const svgRef: Ref<SVGElement | null> = ref(null);
 
 function updateSvg() {
-  jdenticon.updateSvg(svgRef.value!, props.account.address.value?.toString());
+  jdenticon.updateSvg(svgRef.value!, account.address.value?.toString());
 }
 
-onMounted(() => {
-  if (props.account.address.value) {
+onMounted(async () => {
+  if (account.address.value) {
     updateSvg();
   } else {
-    props.account.resolve().then(() => updateSvg());
+    await account.resolve();
+    updateSvg();
   }
 
   queryPfp();
 });
 
 async function queryPfp() {
-  const url = await queryPfpUrl(props.account.address.value!.toString());
+  const url = await queryPfpUrl(account.address.value!.toString());
   if (url) img.value = IPFS.processUri(url);
 }
 </script>
 
 <template lang="pug">
-img.daisy-mask.daisy-mask-hexagon(v-if="img" :src="img.toString()")
+img.daisy-mask.daisy-mask-hexagon.object-contain(
+  v-if="img"
+  :src="img.toString()"
+)
 svg.daisy-mask.daisy-mask-squircle(ref="svgRef" v-else)
 </template>
