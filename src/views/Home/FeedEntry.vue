@@ -78,7 +78,7 @@ const eventActor = computed(() => {
     span.text-base-content.text-opacity-50(v-if="timestamp") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
     Placeholder.inline-block.h-5.w-12(v-else)
 
-  Token.border.rounded(
+  Token.border.rounded.transition-colors.hover_border-base-content.hover_border-opacity-25(
     v-if="event.isList"
     :token="token"
     :kind="TokenKind.Full"

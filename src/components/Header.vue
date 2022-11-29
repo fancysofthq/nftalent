@@ -2,50 +2,52 @@
 /// <reference types="vite-svg-loader" />
 import { account, login, logout } from "@/services/eth";
 import PFP from "./shared/PFP.vue";
-import Bars3Icon from "@/assets/bars-2.svg?component";
+import { Bars3Icon } from "@heroicons/vue/20/solid";
+import NFTalent from "@/assets/nftalent.svg?component";
 </script>
 
 <template lang="pug">
 header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
   .w-full.max-w-3xl.h-full.px-4
-    .daisy-navbar-start.flex.items-baseline.gap-4.h-full
-      router-link.transition-transform.duration-100.active_scale-90(to="/") Home 🏡
+    .daisy-navbar-start.flex.items-center
+      router-link.contents(to="/") 
+        NFTalent.inline-block.h-8.transition-transform.duration-100.active_scale-90
+    .daisy-navbar-center
+    .daisy-navbar-end.flex.justify-end.items-center.gap-4
       router-link.transition-transform.duration-100.active_scale-90(
         to="/explore"
-      ) Explore ✨
-    .daisy-navbar-center
-    .daisy-navbar-end.flex.justify-end
+      ) ✨ Explore
+      router-link.transition-transform.duration-100.active_scale-90(to="/mint") 🌱 Mint
       .flex.h-12.items-center.gap-2(v-if="account") 
-        router-link#mint-button.bbtn(to="/mint") 
-          span.select-none 🌱
-
         router-link#profile-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
           :to="'/' + account.address.value?.toString()"
         )
-          code#address.text-sm.lowercase {{ account.address.value?.display }}
           PFP.bg-base-200.cursor-pointer.h-full(
             :account="account"
             mask="squircle"
           ) 
 
         .daisy-dropdown.daisy-dropdown-end
-          Bars3Icon.h-6.w-6.cursor-pointer.transition-transform.duration-100.active_scale-90(
-            tabindex="0"
-          )
-          ul.daisy-menu.daisy-dropdown-content.rounded.mt-4.w-52.bg-base-100.shadow-lg.divide-y(
+          label(tabindex="0")
+            Bars3Icon.h-6.cursor-pointer.transition-transform.duration-100.active_scale-90
+          ul.daisy-menu.daisy-dropdown-content.rounded.mt-4.w-52.bg-base-100.shadow-lg.divide-y.border.rounded-tr-none(
             tabindex="0"
           )
             li
-              router-link(to="/settings") ⚙️ Settings
+              router-link(to="/settings") 
+                span.text-xl ⚙️
+                span Settings
             li
-              button(@click="logout") 🚪 Logout
-      button.daisy-btn.daisy-btn-primary(v-else @click="login") 
-        span.text-lg 🦊
+              button(@click="logout") 
+                span.text-xl 🚪
+                span Logout
+      button.daisy-btn.btn-commit.flex.gap-1(v-else @click="login") 
+        span.text-xl 🔌
         span Connect
 </template>
 
 <style scoped lang="scss">
-.daisy-navbar-start > .router-link-exact-active {
+.router-link-exact-active {
   @apply font-bold text-primary;
 }
 

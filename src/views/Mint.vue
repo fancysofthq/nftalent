@@ -58,9 +58,9 @@ function stageName(stage: MintStage): string {
     case MintStage.UploadToIPFS:
       return "Upload to IPFS";
     case MintStage.MintIPNFT721:
-      return "Mint IPNFT721";
+      return "Mint IPNFT (721)";
     case MintStage.MintIPNFT1155:
-      return "Mint IPNFT1155";
+      return "Mint IPNFT (1155)";
     case MintStage.Done:
       return "Done!";
   }
@@ -220,7 +220,9 @@ function date2InputDate(date: Date | undefined): string {
         .flex.justify-between.items-center
           .w-full
             label.daisy-label
-              span.daisy-label-text.font-semibold
+              span.daisy-label-text.font-semibold(
+                :class="{ 'text-error': !previewImage }"
+              )
                 span Preview image
                 span.ml-1(v-if="!previewImage") ⚠️
             SelectImage.h-32.w-32.bg-base-200.rounded(
@@ -231,7 +233,7 @@ function date2InputDate(date: Date | undefined): string {
             )
 
         label.daisy-label
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold(:class="{ 'text-error': !name }")
             span Name
             span.ml-1(v-if="!name") ⚠️
         input.daisy-input.daisy-input-bordered.w-full(
@@ -250,7 +252,9 @@ function date2InputDate(date: Date | undefined): string {
         )
 
         label.daisy-label
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold(
+            :class="{ 'text-error': !description }"
+          )
             span Description (Markdown)
             span.ml-1(v-if="!description") ⚠️
         textarea.daisy-textarea.daisy-textarea-bordered.w-full.-mb-1.leading-snug(
@@ -262,7 +266,9 @@ function date2InputDate(date: Date | undefined): string {
         )
 
         label.daisy-label.min-w-min
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold(
+            :class="{ 'text-error': !price.gt(0) }"
+          )
             span Price (
             img.inline-block.mr-1(
               src="/img/eth-icon.svg"
@@ -281,7 +287,9 @@ function date2InputDate(date: Date | undefined): string {
         )
 
         label.daisy-label.min-w-min
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold(
+            :class="{ 'text-error': editions == 0 }"
+          ) 
             span Editions
             span.ml-1(v-if="editions == 0") ⚠️
         input.daisy-input.daisy-input-bordered.w-full(
@@ -329,7 +337,9 @@ function date2InputDate(date: Date | undefined): string {
 
         template(v-else-if="tab == Tab.Redeemable")
           label.daisy-label
-            span.daisy-label-text.font-semibold 
+            span.daisy-label-text.font-semibold(
+              :class="{ 'text-error': !redeemableUnit }"
+            )
               span Redeemable unit
               span.ml-1(v-if="!redeemableUnit") ⚠️
           input.daisy-input.daisy-input-bordered.w-full(
@@ -395,7 +405,7 @@ function date2InputDate(date: Date | undefined): string {
                 .min-w-fit(
                   :class="{ 'text-opacity-50': !(mintStage !== undefined) || mintStage < stage - 1, 'font-semibold': mintStage == stage - 1 }"
                 ) {{ stageName(stage - 1) }}
-                span(v-if="stageEth(stage - 1)") 🦊⚡️
+                span(v-if="stageEth(stage - 1)") ⚡️
                 router-link.daisy-link(
                   v-if="cid && stage - 1 == MintStage.Done && mintStage == MintStage.Done"
                   :to="'/' + cid"
@@ -411,23 +421,20 @@ function date2InputDate(date: Date | undefined): string {
                   max="100"
                 ) 
 
-        router-link.daisy-btn.daisy-btn-secondary.mt-2(
+        router-link.daisy-btn.daisy-btn-secondary.mt-2.flex.gap-2(
           v-if="cid && mintStage == MintStage.Done"
           :to="'/' + cid"
         ) 
           span.text-lg 👀
           span Visit token
 
-        button.daisy-btn.w-full.daisy-btn-primary.mt-2(
+        button.daisy-btn.w-full.daisy-btn-primary.mt-2.flex.gap-2(
           v-else
           @click="mint"
           :disabled="!isCurrentlyMintable || mintInProgress"
         ) 
-          span.text-lg ✨
+          span.text-lg 🌱
           span Mint
-          .rounded-full.text-sm(
-            style="box-shadow: 0 0.5px 1px hsl(var(--bc) / var(--tw-text-opacity)); padding: 0.25rem 0.5rem; background-color: hsl(var(--pc) / var(--tw-text-opacity))"
-          ) 🦊⚡️
 </template>
 
 <script lang="ts">

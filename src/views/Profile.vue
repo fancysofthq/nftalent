@@ -142,30 +142,33 @@ async function unsubscribe() {
     .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-1
       PFP.h-32.w-32.bg-base-200.mb-2(:account="account")
 
-      code.daisy-badge.daisy-badge-primary(v-if="account.ensName.value") {{ account.ensName.value }}
       .flex.gap-1.leading-none(v-if="account.address.value")
-        code.text-sm.text-base-content.text-opacity-75 {{ account.address.value.display }}
+        span.text-sm.text-base-content.text-opacity-70 {{ account.address.value.toString() }}
         DocumentDuplicateIcon.h-4.w-4.cursor-pointer.text-base-content.text-opacity-40(
           @click="copyToClipboard(notNull(account.address.value).toString())"
         )
 
+      .flex.items-baseline.gap-1(v-if="account.ensName.value")
+        span.text-base-content.text-opacity-50 a.k.a.
+        code.daisy-badge.daisy-badge-primary {{ account.ensName.value }}
+
       //- PFA
       template(v-if="isChangingPfa")
-        .flex.flex-col.gap-2.p-2.border.rounded-lg
-          textarea.daisy-textarea.daisy-textarea-bordered.leading-tight(
+        //- TODO: On click outside.
+        //- TODO: Render Markdown.
+        .flex.flex-col.items-center.gap-1.w-full
+          textarea.text-center.text-lg.daisy-textarea.daisy-textarea-bordered.leading-tight.w-full(
             type="text"
             v-model="pfaEphemeral"
           )
-          .flex.gap-2
-            button.daisy-btn.daisy-btn-sm.daisy-btn-error(
+          .flex.gap-1
+            button.daisy-btn.daisy-btn-sm.daisy-btn-error.flex.gap-1.grow(
               @click="isChangingPfa = false"
             ) 🚫 Cancel
-            button.daisy-btn.daisy-btn-sm.daisy-btn-success(
+            button.daisy-btn.daisy-btn-sm.btn-commit.flex.gap-1.grow(
               @click="setPfa"
               :disabled="pfa == pfaEphemeral"
-            )
-              BoltIcon.h-4.w-4
-              span Save
+            ) ✅ Save
       template(v-else)
         .flex.gap-1
           p.text-lg(v-if="pfa") {{ pfa }}
@@ -175,26 +178,31 @@ async function unsubscribe() {
             @click="pfaEphemeral = pfa || ''; isChangingPfa = true"
           )
 
-      .flex.justify-center.text-base-content.text-opacity-75
+      .flex.justify-center.text-base-content.text-opacity-75.text-sm
         span {{ subscribers.length }} subscriber(s)
         span &nbsp;⋅&nbsp;
         span {{ subscriptions.length }} subscription(s)
 
       template(v-if="!isSelf")
-        button.daisy-btn.daisy-btn-primary(
+        button.daisy-btn.daisy-btn-secondary.mt-1.flex.gap-1.daisy-btn-sm(
           v-if="!isSubscribed"
+          :disabled="!eth.account.value"
           @click="subscribe"
         )
           span.text-xl 👀
-          span Subscribe
-        button.daisy-btn(v-else @click="unsubscribe") 🚫 Unsubscribe
+          span Follow
+        button.daisy-btn.mt-1.flex.gap-1.daisy-btn-sm(
+          v-else
+          :disabled="!eth.account.value"
+          @click="unsubscribe"
+        ) 🚫 Unfollow
 
     template(v-if="redeemables.length > 0")
       h2.flex.gap-2.items-baseline
         span.font-bold.text-lg.min-w-max 🎟 Redeemables ({{ redeemables.length }})
         span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be redeemed
       .flex.flex-col.gap-3
-        Token.rounded.bg-base-100.border(
+        Token.rounded.bg-base-100.border.transition-colors.hover_border-base-content.hover_border-opacity-25(
           v-for="token in redeemables"
           :token="token"
           :kind="TokenKind.Full"
@@ -207,7 +215,7 @@ async function unsubscribe() {
         span.font-bold.text-lg.min-w-max 🧸 Collectibles ({{ collectibles.length }})
         span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be collected
       .grid.grid-cols-1.gap-3.sm_grid-cols-3
-        Token.rounded.border.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
+        Token.rounded.border.bg-base-100.transition-all.active_scale-95.cursor-pointer.hover_border-base-content.hover_border-opacity-25(
           v-for="token in collectibles"
           :token="token"
           :kind="TokenKind.Card"

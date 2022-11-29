@@ -41,7 +41,7 @@ async function transact() {
         h1 Purchase token
         button(@click.stop="emit('close')") ❌
 
-      .overflow-y-scroll.h-full
+      .overflow-y-scroll.h-full.divide-y
         .flex.flex-col.gap-2.p-4
           .flex.flex-col.border.p-4.rounded-lg
             .flex.gap-1.items-baseline
@@ -79,15 +79,12 @@ async function transact() {
           )
 
         .p-4
-          button.daisy-btn.daisy-btn-primary.w-full.flex.items-center(
+          button.daisy-btn.btn-commit.w-full.flex.items-center.gap-1(
             @click="transact"
             :disabled="!canTransact"
           ) 
             span.text-xl 💳
             span Purchase {{ purchaseAmount || 0 }} for
-            img.h-5.inline-block(src="/img/eth-icon.svg")
+            img.h-5(src="/img/eth-icon.svg")
             span {{ ethers.utils.formatEther(sum) }}
-            .rounded-full.text-sm(
-              style="box-shadow: 0 0.5px 1px hsl(var(--bc) / var(--tw-text-opacity)); padding: 0.25rem 0.5rem; background-color: hsl(var(--pc) / var(--tw-text-opacity))"
-            ) 🦊⚡️
 </template>

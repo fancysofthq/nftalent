@@ -4,7 +4,6 @@ import { BigNumber } from "ethers";
 import { computed, ref } from "vue";
 import * as eth from "@/services/eth";
 import IPNFT from "@/models/IPNFT";
-import IPNFTRedeemable from "@/services/eth/contract/IPNFT1155";
 
 const props = defineProps<{
   ipnft: IPNFT;
@@ -73,15 +72,12 @@ async function transact() {
         )
 
       .p-4
-        button.daisy-btn.daisy-btn-primary.w-full.flex.items-center(
+        button.daisy-btn.btn-commit.w-full.flex.items-center.flex.gap-1(
           @click="transact"
           :disabled="!canTransact"
         ) 
           span.text-xl 🎟
           span Redeem {{ redeemAmount || 0 }} token{{ redeemAmount > 1 || redeemAmount == 0 ? "s" : "" }}
-          .rounded-full.text-sm(
-            style="box-shadow: 0 0.5px 1px hsl(var(--bc) / var(--tw-text-opacity)); padding: 0.25rem 0.5rem; background-color: hsl(var(--pc) / var(--tw-text-opacity))"
-          ) 🦊⚡️
 </template>
 
 <style scoped lang="scss"></style>

@@ -47,7 +47,9 @@ function saveIpfsGateway() {
           v-model="web3StorageApiKey"
         )
         //- TODO: Add "👌" effect.
-        button.daisy-btn.daisy-btn-primary(@click="saveWeb3StorageApiKey") 
+        button.daisy-btn.daisy-btn-primary.flex.gap-2(
+          @click="saveWeb3StorageApiKey"
+        ) 
           span.text-lg 💾
           span Save
 
@@ -63,7 +65,7 @@ function saveIpfsGateway() {
           v-model="ipfsGateway"
         )
         //- TODO: Add "👌" effect.
-        button.daisy-btn.daisy-btn-primary(@click="saveIpfsGateway") 
+        button.daisy-btn.daisy-btn-primary.flex.gap-2(@click="saveIpfsGateway") 
           span.text-lg 💾
           span Save
 </template>

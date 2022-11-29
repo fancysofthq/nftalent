@@ -187,19 +187,13 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
       :class="{ 'justify-between h-full': kind === Kind.Card }"
     )
       // Basic information
-      .flex.flex-col.gap-1
+      .flex.flex-col.gap-2
         // Title
         span.flex.flex-wrap.items-center.justify-between.gap-1
-          router-link(
+          router-link.daisy-link-hover.daisy-link-primary.font-bold.text-lg.leading-none(
             v-if="token.metadata?.name"
             :to="'/' + token.token.cid.toString()"
-            custom
-            v-slot="{ href, navigate }"
-          ) 
-            a.daisy-link-primary.font-bold.text-lg.leading-none(
-              :href="href"
-              @click.exact.prevent="emit('clickInterest')"
-            ) {{ token.metadata.name }}
+          ) {{ token.metadata.name }}
           Placeholder.h-5.w-48(
             v-else
             :animate="animatePlaceholder"
@@ -209,11 +203,13 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
           .daisy-dropdown.daisy-dropdown-end(v-if="kind === Kind.Full")
             label(tabindex="0")
               EllipsisHorizontalIcon.h-6.w-6.cursor-pointer.transition-transform.duration-100.active_scale-90
-            ul.daisy-menu.daisy-dropdown-content.rounded.w-52.bg-base-100.shadow-lg.divide-y(
+            ul.daisy-menu.daisy-dropdown-content.rounded.w-52.bg-base-100.shadow-lg.divide-y.border.rounded-tr-none(
               tabindex="0"
             )
               li(v-if="maySetPfp")
-                button(@click="setPfp") ⛓🖼 Set as PFP
+                button(@click="setPfp") 
+                  span.text-xl 🖼
+                  span Set as PFP
 
         // Tags
         .flex.flex-wrap.gap-1(v-if="anyTags")
@@ -283,7 +279,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
     @click="mayRedeem ? emit('redeem') : null"
   )
     .app-button.uppercase.text-base-content.select-none(
-      :class="mayRedeem ? 'transition-all duration-100 font-semibold' : 'text-opacity-50'"
+      :class="mayRedeem ? 'text-secondary transition-transform duration-100' : 'text-opacity-25'"
     ) Redeem ({{ token.ipnft1155Balance }})
 </template>
 
@@ -291,7 +287,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
 .app-redeemable-badge {
   &.may-redeem:hover {
     > .app-button {
-      @apply text-primary;
+      @apply text-secondary-focus;
     }
   }
 

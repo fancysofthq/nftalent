@@ -67,7 +67,7 @@ eth.onConnect(() => {
       tbody
         TokenListing(v-for="listing in listings" :listing="listing")
           .flex.gap-2.items-center.justify-end
-            button.daisy-btn.daisy-btn-primary.daisy-btn-sm(
+            button.daisy-btn.daisy-btn-primary.daisy-btn-sm.flex.gap-1(
               :disabled="listing.stockSize.eq(0)"
               @click="purchaseListing = listing"
             )

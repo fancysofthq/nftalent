@@ -19,7 +19,6 @@ html {
 }
 
 body {
-  font-family: "Nunito", sans-serif;
-  @apply bg-base-100;
+  @apply bg-base-100 font-sans;
 }
 </style>

@@ -1,9 +1,14 @@
+const defaultTheme = require("tailwindcss/defaultTheme");
+
 module.exports = {
   content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
         web3: "rgb(var(--color-web3))",
+      },
+      fontFamily: {
+        sans: ["Montserrat", ...defaultTheme.fontFamily.sans],
       },
     },
   },
@@ -17,7 +22,7 @@ module.exports = {
         },
       },
       "dark",
-      "dracula"
+      "dracula",
     ],
     prefix: "daisy-",
   },
