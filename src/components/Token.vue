@@ -121,7 +121,9 @@ const imageUrl: ComputedRef<URL | undefined> = computed(() => {
 
 const maySetPfp = computed(() => {
   return (
-    eth.account.value && token.ipnft721CurrentOwner?.equals(eth.account.value)
+    eth.account.value &&
+    (token.ipnft721CurrentOwner?.equals(eth.account.value) ||
+      token.ipnft1155Balance?.gt(0))
   );
 });
 
@@ -135,10 +137,22 @@ eth.onConnect(() => {
 
 async function setPfp() {
   if (!maySetPfp.value) throw "Not allowed";
-  const tx = await eth.persona.setPfp(
-    token.token.toERC721Token(eth.ipnft721.address).toNFT()
-  );
-  console.debug("Set PFP", tx);
+  let tx;
+
+  if (token.ipnft721CurrentOwner?.equals(eth.account.value!)) {
+    tx = await eth.persona.setPfp(
+      token.token.toERC721Token(eth.ipnft721.address).toNFT()
+    );
+    console.debug("Set PFP", tx);
+  } else if (token.ipnft1155Balance?.gt(0)) {
+    tx = await eth.persona.setPfp(
+      token.token.toERC1155Token(eth.ipnft1155.address).toNFT()
+    );
+  } else {
+    throw "Not allowed";
+  }
+
+  console.debug(tx);
 }
 
 function urlFromImage(image: string | URL | FileWithUrl): URL {
