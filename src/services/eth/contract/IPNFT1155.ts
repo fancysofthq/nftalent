@@ -75,6 +75,10 @@ export default class IPNFT1155 {
     else return new Date(raw * 1000);
   }
 
+  async exists(token: IPNFT.Token): Promise<boolean> {
+    return await this._contract.exists(token.id);
+  }
+
   private async _syncTransferSingle(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
       "IPNFT1155.Transfer",

@@ -61,10 +61,12 @@ onMounted(async () => {
     "currentOwner",
     props.account.address.value!.toString(),
     "next",
-    (t) => {
-      const token = IPNFTModel.getOrCreate(
-        IPNFT.uint256ToCID(BigNumber.from(t.id))
-      );
+    async (t) => {
+      const cid = IPNFT.uint256ToCID(BigNumber.from(t.id));
+      const exists = await eth.ipnft1155.exists(new IPNFT.Token(cid));
+      if (!exists) return;
+
+      const token = IPNFTModel.getOrCreate(cid);
       token.ipnft1155ExpiredAt = t.ipnft1155ExpiredAt || null;
       token.ipnft1155Finalized = t.ipnft1155IsFinalized;
       tokens.value.push(token);
