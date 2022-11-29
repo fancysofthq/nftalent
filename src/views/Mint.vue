@@ -362,16 +362,17 @@ function date2InputDate(date: Date | undefined): string {
             :disabled="mintInProgress"
           )
 
-      .w-full.p-4.bg-checkerboard.bg-fixed.grid.gap-3(
-        :class="{ 'grid-cols-3': tab == Tab.CollectibeImage, 'grid-cols-2': tab == Tab.Redeemable }"
+      .w-full.p-4.bg-checkerboard.bg-fixed.grid.grid-cols-1.gap-3(
+        :class="{ 'sm_grid-cols-3': tab == Tab.CollectibeImage, 'sm_grid-cols-2': tab == Tab.Redeemable }"
       )
-        Token.rounded-lg.bg-base-100.shadow-lg.h-min(
+        Token.rounded-lg.bg-base-100.shadow-lg.h-min.sm_w-auto(
           v-if="tab === Tab.CollectibeImage"
           :token="tokenModel"
           :animatePlaceholder="false"
           :kind="TokenKind.Card"
+          class="w-3/4"
         )
-        Token.rounded-lg.bg-base-100.shadow-lg.col-span-2(
+        Token.rounded-lg.bg-base-100.shadow-lg.sm_col-span-2(
           :token="tokenModel"
           :animatePlaceholder="false"
           :kind="TokenKind.Full"
