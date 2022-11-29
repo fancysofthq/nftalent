@@ -1,14 +1,15 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import Home from "./views/Home.vue";
-import Settings from "./views/Settings.vue";
-import Mint from "./views/Mint.vue";
-import Profile from "./views/Profile.vue";
-import Token from "./views/Token.vue";
 import { CID } from "multiformats";
 import { base32 } from "multiformats/bases/base32";
 import IPNFT from "./models/IPNFT";
 import Account from "./models/Account";
-import Explore from "./views/Explore.vue";
+
+const Home = () => import("./views/Home.vue");
+const Settings = () => import("./views/Settings.vue");
+const Mint = () => import("./views/Mint.vue");
+const Profile = () => import("./views/Profile.vue");
+const Token = () => import("./views/Token.vue");
+const Explore = () => import("./views/Explore.vue");
 
 export default createRouter({
   history: createWebHashHistory(),
