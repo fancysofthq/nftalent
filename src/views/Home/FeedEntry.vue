@@ -20,7 +20,6 @@ const timestamp: Ref<Date | undefined> = ref();
 onMounted(() => props.token.fetchIPFSMetadata());
 
 eth.onConnect(() => {
-  console.debug("Feed/Common/Entry: eth.onConnect");
   props.token.fetchEthMetadata();
 
   eth.provider
