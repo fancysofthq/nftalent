@@ -78,16 +78,17 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
 </script>
 
 <template lang="pug">
-.flex.justify-between.items-center.text-sm
-  .flex.items-center.justify-start.gap-2.p-4
+.flex.justify-between.items-center.text-sm.overflow-x-scroll
+  .flex.items-center.justify-start.gap-2.p-4.min-w-max
     span.text-2xl {{ eventEmoji }}
-    Chip.gap-1.text-primary(
+
+    Chip.gap-1.text-primary.w-max(
       v-if="eventActor"
       :account="Account.getOrCreateFromAddress(eventActor)"
       pfp-class="h-8 bg-base-100"
     )
 
-    .flex.items-baseline.gap-1
+    .flex.items-baseline.gap-1.w-max
       span {{ eventName }}
       span(v-if="eventAmount") &nbsp;{{ eventAmount }}
       span(v-if="event.isMetaStorePurchase")
@@ -96,7 +97,9 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
         span &nbsp;{{ ethers.utils.formatEther(BigNumber.from(event.asMetaStorePurchase.income)) }}
 
   .p-4(v-if="timestamp") 
-    span.text-base-content.text-opacity-50(:title="timestamp.toLocaleString()") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
+    .text-base-content.text-opacity-50.w-max(
+      :title="timestamp.toLocaleString()"
+    ) {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
 </template>
 
 <style scoped lang="scss"></style>
