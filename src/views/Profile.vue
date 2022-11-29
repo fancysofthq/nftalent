@@ -206,7 +206,7 @@ async function unsubscribe() {
       h2.flex.gap-2.items-baseline
         span.font-bold.text-lg.min-w-max 🧸 Collectibles ({{ collectibles.length }})
         span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be collected
-      .grid.grid-cols-3.gap-3
+      .grid.grid-cols-1.gap-3.sm_grid-cols-3
         Token.rounded.border.bg-base-100.transition-transform.active_scale-95.cursor-pointer(
           v-for="token in collectibles"
           :token="token"
