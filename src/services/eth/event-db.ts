@@ -666,4 +666,7 @@ export class EventDB {
   }
 }
 
-export default await new EventDB().open();
+const db = new EventDB();
+export default db;
+
+db.open();
