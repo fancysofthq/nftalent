@@ -60,10 +60,7 @@ const eventActor = computed(() => {
 .flex.flex-col.gap-2
   .flex.justify-between.items-center.text-sm
     .flex.gap-2.items-center
-      Chip.gap-1.text-primary(
-        :account="eventActor"
-        pfp-class="h-10 bg-base-100"
-      )
+      Chip.gap-1(:account="eventActor" pfp-class="h-10 bg-base-100")
       span.text-base-content.text-opacity-50 posted:
 
     span.text-base-content.text-opacity-50(v-if="timestamp") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
