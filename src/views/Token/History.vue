@@ -13,7 +13,7 @@ const props = defineProps<{ token: IPNFT.Token }>();
 const entries: Ref<Entry[]> = ref([]);
 let cancelFeed = false;
 
-onMounted(async () => {
+eth.onConnect(async () => {
   subscribeToFeed(
     props.token,
     (_entries) => {

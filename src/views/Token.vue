@@ -19,6 +19,10 @@ const redeemModal = ref(false);
 
 onMounted(() => {
   props.ipnft.fetchIPFSMetadata();
+});
+
+eth.onConnect(() => {
+  props.ipnft.fetchEthMetadata();
 
   edb.iterateEventsIndex(
     "MetaStore.List",
@@ -36,8 +40,6 @@ onMounted(() => {
     }
   );
 });
-
-eth.onConnect(() => props.ipnft.fetchEthMetadata());
 </script>
 
 <template lang="pug">
