@@ -3,7 +3,7 @@
 import { account, login, logout } from "@/services/eth";
 import PFP from "./shared/PFP.vue";
 import { Bars3Icon } from "@heroicons/vue/20/solid";
-import NFTalent from "@/assets/nftalent.svg?component";
+import Logo from "@/assets/nftalent.svg?component";
 </script>
 
 <template lang="pug">
@@ -11,7 +11,7 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
   .w-full.max-w-3xl.h-full.px-4
     .daisy-navbar-start.flex.items-center
       router-link.contents(to="/") 
-        NFTalent.inline-block.h-8.transition-transform.duration-100.active_scale-90
+        Logo.inline-block.h-8.transition-transform.duration-100.active_scale-90
     .daisy-navbar-center
     .daisy-navbar-end.flex.justify-end.items-center.gap-4
       router-link.transition-transform.duration-100.active_scale-90(

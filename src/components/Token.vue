@@ -201,10 +201,10 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
       :class="{ 'justify-between h-full': kind === Kind.Card }"
     )
       // Basic information
-      .flex.flex-col.gap-2
+      .flex.flex-col.gap-1
         // Title
         span.flex.flex-wrap.items-center.justify-between.gap-1
-          router-link.daisy-link-hover.daisy-link-primary.font-bold.text-lg.leading-none(
+          router-link.daisy-link-hover.daisy-link-primary.font-semibold.leading-none(
             v-if="token.metadata?.name"
             :to="'/' + token.token.cid.toString()"
           ) {{ token.metadata.name }}
@@ -243,7 +243,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
       // Description
       template(v-if="kind === Kind.Full")
         // TODO: Hide overflowing text.
-        Markdown.leading-tight.flex.flex-col.gap-1.text-justify(
+        Markdown.leading-tight.flex.flex-col.gap-1.text-justify.text-sm(
           v-if="token.metadata?.description"
           :source="token.metadata.description"
         )
