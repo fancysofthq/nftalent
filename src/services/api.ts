@@ -5,6 +5,10 @@ import { Address } from "./eth/Address";
 
 const JWT_KEY = "api.jwt";
 
+function jwtKeyFor(address: Address) {
+  return `${JWT_KEY}.${address}`;
+}
+
 const nonAuthedClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
@@ -32,13 +36,13 @@ export async function web3Auth(client: AxiosInstance): Promise<string> {
   }
 
   const jwt = response.data;
-  localStorage.setItem(JWT_KEY, jwt);
+  localStorage.setItem(jwtKeyFor(eth.account.value?.address.value!), jwt);
 
   return jwt;
 }
 
-export function removeAuth() {
-  localStorage.removeItem(JWT_KEY);
+export function removeAuth(address: Address) {
+  localStorage.removeItem(jwtKeyFor(address));
 }
 
 export async function yieldAuthedClient(
@@ -49,7 +53,9 @@ export async function yieldAuthedClient(
   let response: AxiosResponse | undefined = undefined;
 
   while (retryAttempts > 0) {
-    let jwt: string | null = localStorage.getItem(JWT_KEY);
+    let jwt: string | null = localStorage.getItem(
+      jwtKeyFor(eth.account.value?.address.value!)
+    );
     if (!jwt) jwt = await web3Auth(client);
     if (!jwt) throw new Error("Failed to sign");
 
@@ -57,7 +63,7 @@ export async function yieldAuthedClient(
     response = await callback(client);
 
     if (response!.status === 401) {
-      localStorage.removeItem(JWT_KEY);
+      localStorage.removeItem(jwtKeyFor(eth.account.value?.address.value!));
       retryAttempts--;
     }
 
@@ -72,7 +78,6 @@ export async function isSubscribed(
   to?: Address
 ): Promise<boolean> {
   if (!from && !to) throw new Error("Must provide from or to");
-  console.debug(from, to);
 
   const response = await nonAuthedClient.get("/v1/subscriptions/", {
     params: {
