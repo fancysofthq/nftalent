@@ -8,6 +8,7 @@ import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./Feed.vue";
 import { formatDistance } from "date-fns";
 import Token, { Kind as TokenKind } from "@/components/Token.vue";
+import PFP from "@/components/shared/PFP.vue";
 
 const props = defineProps<{ event: EventWrapper; token: IPNFT }>();
 const emit = defineEmits<{
@@ -30,7 +31,7 @@ eth.onConnect(() => {
 const eventEmoji = computed(() => {
   switch (props.event.kind) {
     case EventKind.List:
-      return "📦";
+      return "✨";
     case EventKind.Purchase:
       return "💳";
   }
@@ -39,7 +40,7 @@ const eventEmoji = computed(() => {
 const eventName = computed(() => {
   switch (props.event.kind) {
     case EventKind.List:
-      return "listed";
+      return "posted";
     case EventKind.Purchase:
       return "purchased";
   }
@@ -48,9 +49,9 @@ const eventName = computed(() => {
 const eventActor = computed(() => {
   switch (props.event.kind) {
     case EventKind.List:
-      return props.event.asList.seller;
+      return Account.getOrCreateFromAddress(props.event.asList.seller);
     case EventKind.Purchase:
-      return props.event.asPurchase.buyer;
+      return Account.getOrCreateFromAddress(props.event.asPurchase.buyer);
   }
 });
 </script>
@@ -58,21 +59,12 @@ const eventActor = computed(() => {
 <template lang="pug">
 .flex.flex-col.gap-2
   .flex.justify-between.items-center.text-sm
-    .flex.leading-none.gap-2.items-center
-      span.text-xl {{ eventEmoji }}
-      Chip.h-5.bg-base-200(
-        v-if="eventActor"
-        :account="Account.getOrCreateFromAddress(eventActor)"
-        pfp-class="bg-base-100"
+    .flex.gap-2.items-center
+      Chip.gap-1.text-primary(
+        :account="eventActor"
+        pfp-class="h-10 bg-base-100"
       )
-      Placeholder.h-5.w-12(v-else)
-      span {{ eventName }}
-
-      template(v-if="event.isPurchase")
-        .inline-flex.items-baseline(class="gap-0.5") 
-          span {{ event.asPurchase.amount }}
-          span ×
-          span.border.px-1.rounded {{ token.metadata?.properties.unit }}
+      span.text-base-content.text-opacity-50 posted:
 
     span.text-base-content.text-opacity-50(v-if="timestamp") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
     Placeholder.inline-block.h-5.w-12(v-else)

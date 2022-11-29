@@ -257,10 +257,10 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
         v-if="kind === Kind.Full || kind === Kind.Card"
       )
         span.align-middle &copy;&nbsp;
-        Chip.align-middle.h-4.bg-base-200.text-opacity-100.text-xs(
+        Chip.gap-1.align-middle.text-xs.text-primary(
           v-if="token.ipnft721Minter"
           :account="token.ipnft721Minter"
-          pfp-class="bg-base-100"
+          pfp-class="h-5"
         )
         Placeholder.inline-block.h-3.w-8.align-middle(
           v-else

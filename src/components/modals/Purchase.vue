@@ -65,7 +65,8 @@ async function transact() {
           //- .daisy-alert.daisy-alert-info
           .flex.items-center.gap-2.border.p-4.rounded-lg
             .text-xl ☝️
-            p.leading-tight After purchasing a redeemable token, you'd be able to resell it, or redeem later.
+            p.leading-tight(v-if="ipnft.ipnft1155ExpiredAt") After purchasing a redeemable token, you'd be able to resell it, or redeem later.
+            p.leading-tight(v-else) After purchasing a token, you'd be able to resell it.
 
         .p-4
           label.daisy-label.pt-0

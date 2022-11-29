@@ -23,11 +23,11 @@ eth.onConnect(() => {
 tr
   td
     .flex.items-center.gap-2
-      span.text-xl(title="Primary listing") {{ isPrimary ? "👑" : "" }}
-      Chip.bg-base-200.h-5.w-min(
+      Chip.gap-1.text-sm.text-primary(
         :account="listing.seller"
-        pfp-class="bg-base-100"
+        pfp-class="h-8 bg-base-100"
       )
+      span.text-2xl(title="Primary listing") {{ isPrimary ? "👑" : "" }}
   td 
     img.inline-block.h-5.mr-1(src="/img/eth-icon.svg" title="ETH")
     span {{ ethers.utils.formatEther(listing.price) }}

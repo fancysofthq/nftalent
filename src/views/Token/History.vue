@@ -60,7 +60,6 @@ import { AddressZero } from "@ethersproject/constants";
 import * as eth from "@/services/eth";
 
 export enum EventKind {
-  IPNFT721Mint,
   IPNFT1155Mint,
   MetaStoreList,
   MetaStorePurchase,
@@ -76,15 +75,6 @@ export class EventWrapper {
 
   get logIndex(): number {
     return this.event.logIndex;
-  }
-
-  get isIPNFT721Mint(): boolean {
-    return this.kind == EventKind.IPNFT721Mint;
-  }
-
-  get asIPNFT721Mint(): IERC721Transfer {
-    if (!this.isIPNFT721Mint) throw new Error("Invalid event kind");
-    return this.event as IERC721Transfer;
   }
 
   get isIPNFT1155Mint(): boolean {
@@ -125,8 +115,6 @@ export class EventWrapper {
 
   get tokenId(): BigNumber {
     switch (this.kind) {
-      case EventKind.IPNFT721Mint:
-        return BigNumber.from(this.asIPNFT721Mint.tokenId);
       case EventKind.IPNFT1155Mint:
         return BigNumber.from(this.asIPNFT1155Mint.id);
       case EventKind.MetaStoreList:
@@ -149,30 +137,10 @@ async function subscribeToFeed(
   let transferBlock = 0;
   let listBlock = 0;
   let purchaseBlock = 0;
-  let ipnft721MintFound = false;
 
   while (!pollCancelled()) {
     const promises = [];
     const events: EventWrapper[] = [];
-
-    // IPNFT721 Mint (happens only once)
-    if (!ipnft721MintFound) {
-      promises.push(
-        edb
-          .findEvent(
-            "IPNFT721.Transfer",
-            "from-tokenId",
-            [AddressZero, filter.id._hex],
-            "nextunique"
-          )
-          .then((event) => {
-            if (event) {
-              events.push(new EventWrapper(EventKind.IPNFT721Mint, event));
-              ipnft721MintFound = true;
-            }
-          })
-      );
-    }
 
     // IPNFT1155 Mint & Redeem
     promises.push(

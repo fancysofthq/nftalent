@@ -14,11 +14,11 @@ onMounted(() => account.resolve());
 </script>
 
 <template lang="pug">
-router-link.inline-flex.items-center.gap-1.daisy-link-hover.border.rounded-sm.pr-1.transition-transform.duration-100.active_scale-95(
+router-link.daisy-link-hover.inline-flex.items-center(
   :to="'/' + account.address.value?.toString()"
-)
-  PFP.h-full.object-contain.rounded-l(:account="account" :class="pfpClass")
-  span.lowercase {{ account.address.value?.display }}
+) 
+  PFP(:account="account" :class="pfpClass")
+  span {{ account.ensName.value ? account.ensName.value : account.address.value?.display }}
 </template>
 
 <style scoped lang="scss"></style>

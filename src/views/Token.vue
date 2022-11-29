@@ -56,7 +56,8 @@ eth.onConnect(() => {
       @redeem="redeemModal = true"
     )
 
-    h2.font-bold.text-lg Listings ({{ listings.length }}) 📦
+    h2.flex.gap-2.items-baseline
+      span.font-bold.text-lg.min-w-max 📦 Listings ({{ listings.length }})
     table.daisy-table.rounded-lg.border
       thead
         tr
@@ -74,7 +75,8 @@ eth.onConnect(() => {
               span.text-xl 💳
               span Purchase
 
-    h2.font-bold.text-lg History 📜
+    h2.flex.gap-2.items-baseline
+      span.font-bold.text-lg.min-w-max 📜 History
     .border.rounded-lg.flex-col.gap-2.divide-y
       History(:token="ipnft.token")
 

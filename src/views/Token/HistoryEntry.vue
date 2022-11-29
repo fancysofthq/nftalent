@@ -11,7 +11,10 @@ import { formatDistance } from "date-fns";
 const props = defineProps<{ event: EventWrapper; token: IPNFTModel }>();
 const timestamp: Ref<Date | undefined> = ref();
 
-onMounted(() => props.token.fetchIPFSMetadata());
+onMounted(() => {
+  console.debug(props.event);
+  props.token.fetchIPFSMetadata();
+});
 
 eth.onConnect(() => {
   props.token.fetchEthMetadata();
@@ -23,12 +26,10 @@ eth.onConnect(() => {
 
 const eventEmoji: ComputedRef<string> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT721Mint:
-      return "🎉";
     case EventKind.IPNFT1155Mint:
-      return "🎁";
+      return "🌱";
     case EventKind.MetaStoreList:
-      return "✨";
+      return "📦";
     case EventKind.MetaStorePurchase:
       return "💳";
     case EventKind.IPNFT1155Redeem:
@@ -38,24 +39,21 @@ const eventEmoji: ComputedRef<string> = computed(() => {
 
 const eventName: ComputedRef<string> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT721Mint:
-      return "Minted (721)";
     case EventKind.IPNFT1155Mint:
-      return "Minted (1155)";
+      return "minted";
     case EventKind.MetaStoreList:
-      return "Listed";
+      return "listed";
     case EventKind.MetaStorePurchase:
-      return "Purchased";
+      return "purchased";
     case EventKind.IPNFT1155Redeem:
-      return "Redeemed";
+      return "redeemed";
   }
 });
 
 const eventActor: ComputedRef<string | undefined> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT721Mint:
     case EventKind.IPNFT1155Mint:
-      return undefined; // TODO: Operator
+      return props.event.asIPNFT1155Mint.from;
     case EventKind.MetaStoreList:
       return props.event.asMetaStoreList.seller;
     case EventKind.MetaStorePurchase:
@@ -67,8 +65,6 @@ const eventActor: ComputedRef<string | undefined> = computed(() => {
 
 const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT721Mint:
-      return undefined;
     case EventKind.IPNFT1155Mint:
       return props.event.asIPNFT1155Mint.value;
     case EventKind.MetaStoreList:
@@ -79,48 +75,28 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
       return props.event.asIPNFT1155Redeem.value;
   }
 });
-
-const eventTarget: ComputedRef<string | undefined> = computed(() => {
-  switch (props.event.kind) {
-    case EventKind.IPNFT721Mint:
-      return props.event.asIPNFT721Mint.to;
-    case EventKind.IPNFT1155Mint:
-      return props.event.asIPNFT1155Mint.to;
-    case EventKind.MetaStoreList:
-    case EventKind.MetaStorePurchase:
-    case EventKind.IPNFT1155Redeem:
-      return undefined;
-  }
-});
 </script>
 
 <template lang="pug">
-.flex.justify-between
-  .inline-flex.items-center.gap-1.p-4
-    span.text-xl {{ eventEmoji }}
-    Chip.h-5.bg-base-200(
+.flex.justify-between.items-center.text-sm
+  .flex.items-center.justify-start.gap-2.p-4
+    span.text-2xl {{ eventEmoji }}
+    Chip.gap-1.text-primary(
       v-if="eventActor"
       :account="Account.getOrCreateFromAddress(eventActor)"
-      pfp-class="bg-base-100"
+      pfp-class="h-8 bg-base-100"
     )
-    span {{ eventName }}
 
-    span(v-if="eventAmount") N{{ eventAmount }}
-
-    template(v-if="eventTarget")
-      span to
-      Chip.h-5.bg-base-200(
-        :account="Account.getOrCreateFromAddress(eventTarget)"
-        pfp-class="bg-base-100"
-      )
-
-    template(v-if="event.isMetaStorePurchase")
-      span for
-      img(src="/img/eth-icon.svg" style="height: 1.11rem" title="ETH")
-      span {{ ethers.utils.formatEther(BigNumber.from(event.asMetaStorePurchase.income)) }}
+    .flex.items-baseline.gap-1
+      span {{ eventName }}
+      span(v-if="eventAmount") &nbsp;{{ eventAmount }}
+      span(v-if="event.isMetaStorePurchase")
+        span &nbsp;for&nbsp;
+        img.h-5.inline-block(src="/img/eth-icon.svg" title="ETH")
+        span &nbsp;{{ ethers.utils.formatEther(BigNumber.from(event.asMetaStorePurchase.income)) }}
 
   .p-4(v-if="timestamp") 
-    span(:title="timestamp.toLocaleString()") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
+    span.text-base-content.text-opacity-50(:title="timestamp.toLocaleString()") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
 </template>
 
 <style scoped lang="scss"></style>
