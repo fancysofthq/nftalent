@@ -33,7 +33,7 @@ enum Tab {
   Redeemable,
 }
 
-const tab = ref(Tab.CollectibeImage);
+const tab = ref(Tab.Redeemable);
 
 const imageOverride: Ref<FileWithUrl | undefined> = ref();
 
@@ -311,18 +311,18 @@ function date2InputDate(date: Date | undefined): string {
           :disabled="mintInProgress"
         )
 
-        label.daisy-label.min-w-min
-          span.daisy-label-text.font-semibold 
-            span Token type
-        .daisy-tabs.daisy-tabs-boxed
-          .daisy-tab(
-            :class="{ 'daisy-tab-active': tab == Tab.CollectibeImage }"
-            @click="tab = Tab.CollectibeImage"
-          ) 🖼 Collectible
-          .daisy-tab(
-            :class="{ 'daisy-tab-active': tab == Tab.Redeemable }"
-            @click="tab = Tab.Redeemable"
-          ) 🎟 Redeemable
+        //- label.daisy-label.min-w-min
+        //-   span.daisy-label-text.font-semibold 
+        //-     span Token type
+        //- .daisy-tabs.daisy-tabs-boxed
+        //-   .daisy-tab(
+        //-     :class="{ 'daisy-tab-active': tab == Tab.CollectibeImage }"
+        //-     @click="tab = Tab.CollectibeImage"
+        //-   ) 🖼 Collectible
+        //-   .daisy-tab(
+        //-     :class="{ 'daisy-tab-active': tab == Tab.Redeemable }"
+        //-     @click="tab = Tab.Redeemable"
+        //-   ) 🎟 Redeemable
 
         template(v-if="tab == Tab.CollectibeImage")
           label.daisy-label
