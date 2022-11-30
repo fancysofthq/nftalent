@@ -3,7 +3,7 @@
 import { account, login, logout } from "@/services/eth";
 import PFP from "./shared/PFP.vue";
 import { Bars3Icon } from "@heroicons/vue/20/solid";
-import Logo from "@/assets/nftalent.svg?component";
+import Logo from "@/assets/cryptalent.svg?component";
 </script>
 
 <template lang="pug">
