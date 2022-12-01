@@ -26,6 +26,7 @@
     "web3.storage": "^4.4.0"
   },
   "devDependencies": {
+    "@multiformats/sha3": "^2.0.13",
     "@prettier/plugin-pug": "^2.2.0",
     "@vitejs/plugin-vue": "^3.2.0",
     "@volar/vue-language-plugin-pug": "^1.0.9",

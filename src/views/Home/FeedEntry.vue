@@ -2,18 +2,17 @@
 import { computed, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
 import Account from "@/models/Account";
-import IPNFT from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import Placeholder from "@/components/shared/Placeholder.vue";
 import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./Feed.vue";
 import { formatDistance } from "date-fns";
-import Token, { Kind as TokenKind } from "@/components/Token.vue";
-import PFP from "@/components/shared/PFP.vue";
+import IPFTRedeemableVue from "@/components/IPFTRedeemable.vue";
 
-const props = defineProps<{ event: EventWrapper; token: IPNFT }>();
+const props = defineProps<{ event: EventWrapper; token: IPFTRedeemable }>();
 const emit = defineEmits<{
-  (event: "entryClick", token: IPNFT): void;
-  (event: "redeem", token: IPNFT): void;
+  (event: "entryClick", token: IPFTRedeemable): void;
+  (event: "redeem", token: IPFTRedeemable): void;
 }>();
 
 const timestamp: Ref<Date | undefined> = ref();
@@ -21,7 +20,7 @@ const timestamp: Ref<Date | undefined> = ref();
 onMounted(() => props.token.fetchIPFSMetadata());
 
 eth.onConnect(() => {
-  props.token.fetchEthMetadata();
+  props.token.fetchEthData();
 
   eth.provider
     .value!.getBlock(props.event.blockNumber)
@@ -66,10 +65,9 @@ const eventActor = computed(() => {
     span.text-base-content.text-opacity-50(v-if="timestamp") {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}
     Placeholder.inline-block.h-5.w-12(v-else)
 
-  Token.border.rounded.transition-colors.hover_border-base-content.hover_border-opacity-25(
+  IPFTRedeemableVue.border.rounded.transition-colors.hover_border-base-content.hover_border-opacity-25(
     v-if="event.isList"
     :token="token"
-    :kind="TokenKind.Full"
     @click-interest="emit('entryClick', token)"
     @redeem="emit('redeem', token)"
   )

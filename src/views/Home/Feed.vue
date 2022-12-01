@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, type ShallowRef } from "vue";
-import { uint256ToCID } from "@/services/eth/contract/IPNFT";
-import IPNFT from "@/models/IPNFT";
+import * as IPFT from "@/services/eth/contract/IPFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import Entry from "./FeedEntry.vue";
 import * as eth from "@/services/eth";
 import * as api from "@/services/api";
@@ -9,12 +9,12 @@ import Explore from "../Explore.vue";
 
 type Entry = {
   event: EventWrapper;
-  token: IPNFT;
+  token: IPFTRedeemable;
 };
 
 const emit = defineEmits<{
-  (event: "entryClick", ipnft: IPNFT): void;
-  (event: "redeem", ipnft: IPNFT): void;
+  (event: "entryClick", ipnft: IPFTRedeemable): void;
+  (event: "redeem", ipnft: IPFTRedeemable): void;
 }>();
 
 const subscriptions: ShallowRef<Address[]> = ref([]);
@@ -37,7 +37,7 @@ eth.onConnect(async () => {
       entries.value.unshift(
         ..._entries.map((e) => ({
           event: e,
-          token: IPNFT.getOrCreate(uint256ToCID(e.tokenId)),
+          token: IPFTRedeemable.getOrCreate(IPFT.uint256ToCID(e.tokenId)),
         }))
       );
     },
@@ -65,14 +65,11 @@ Explore.border.rounded-lg(v-else)
 </template>
 
 <script lang="ts">
-import edb, {
-  type Event,
-  type List,
-  type Purchase,
-} from "@/services/eth/event-db";
+import edb, { type Event } from "@/services/eth/event-db";
 import { timeout } from "@/util";
 import { BigNumber } from "ethers";
 import { Address } from "@/services/eth/Address";
+import * as OpenStore from "@/services/eth/contract/OpenStore";
 
 export enum EventKind {
   List,
@@ -94,18 +91,18 @@ export class EventWrapper {
     return this.kind == EventKind.List;
   }
 
-  get asList(): List {
+  get asList(): OpenStore.List {
     if (!this.isList) throw new Error("Invalid event kind");
-    return this.event as List;
+    return this.event as OpenStore.List;
   }
 
   get isPurchase(): boolean {
     return this.kind == EventKind.Purchase;
   }
 
-  get asPurchase(): Purchase {
+  get asPurchase(): OpenStore.Purchase {
     if (!this.isPurchase) throw new Error("Invalid event kind");
-    return this.event as Purchase;
+    return this.event as OpenStore.Purchase;
   }
 
   get tokenId(): BigNumber {
@@ -135,7 +132,7 @@ async function subscribeToFeed(
     // List
     promises.push(
       edb.iterateEventsIndex(
-        "MetaStore.List",
+        "OpenStore.List",
         "blockNumber",
         IDBKeyRange.bound(
           [eth.app.toString(), listBlock],
@@ -155,7 +152,7 @@ async function subscribeToFeed(
     // // Purchase
     // promises.push(
     //   edb.iterateEventsIndex(
-    //     "MetaStore.Purchase",
+    //     "OpenStore.Purchase",
     //     "blockNumber",
     //     IDBKeyRange.bound(purchaseBlock, Number.MAX_SAFE_INTEGER),
     //     "next",

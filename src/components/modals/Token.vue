@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { OnClickOutside } from "@vueuse/components";
-import IPNFT from "@/models/IPNFT";
-import View from "@/views/Token.vue";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
+import View from "@/views/IPFT.vue";
 
-const props = defineProps<{ ipnft: IPNFT }>();
+const props = defineProps<{ ipft: IPFTRedeemable }>();
 const emit = defineEmits(["close"]);
 </script>
 
@@ -17,5 +17,5 @@ const emit = defineEmits(["close"]);
         h1 Token
         button(@click.stop="emit('close')") ❌
       .overflow-y-scroll
-        View(:ipnft="ipnft")
+        View(:cid="ipft.cid")
 </template>

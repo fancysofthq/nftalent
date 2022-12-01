@@ -1,5 +1,5 @@
-import { Ierc721Metadata as BaseType } from "@/../lib/ipnft/waffle/types/Ierc721Metadata";
-import { abi } from "@/../lib/ipnft/waffle/IERC721Metadata.json";
+import { Ierc721Metadata as BaseType } from "@/../lib/ipft/waffle/types/Ierc721Metadata";
+import { abi } from "@/../lib/ipft/waffle/IERC721Metadata.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Token } from "./IERC721";

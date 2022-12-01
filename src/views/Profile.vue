@@ -3,6 +3,8 @@ import eventDb from "@/services/eth/event-db";
 import { copyToClipboard, notNull } from "@/util";
 import { Address } from "@/services/eth/Address";
 import Redeem from "@/components/modals/Redeem.vue";
+import * as DagCbor from "@ipld/dag-cbor";
+import { keccak256 } from "@multiformats/sha3";
 
 export async function fetchPfa(account: string): Promise<string | undefined> {
   const accountObj = await eventDb.db.get("Account", account);
@@ -18,58 +20,58 @@ export async function fetchPfa(account: string): Promise<string | undefined> {
 import PFP from "@/components/shared/PFP.vue";
 import Account from "@/models/Account";
 import { computed, onMounted, type Ref, ref, type ShallowRef } from "vue";
-import Token, { Kind as TokenKind } from "@/components/Token.vue";
+import IPFTRedeemableVue from "@/components/IPFTRedeemable.vue";
 import TokenModal from "@/components/modals/Token.vue";
-import IPNFTModel from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import edb from "@/services/eth/event-db";
-import * as IPNFT from "@/services/eth/contract/IPNFT";
+import * as IPFT from "@/services/eth/contract/IPFT";
 import { BigNumber } from "@ethersproject/bignumber";
 import * as eth from "@/services/eth";
 import {
   PencilSquareIcon,
-  BoltIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/vue/24/outline";
 import * as api from "@/services/api";
 
 const props = defineProps<{ account: Account }>();
-const tokens: ShallowRef<IPNFTModel[]> = ref([]);
-const tokenModal: ShallowRef<IPNFTModel | undefined> = ref();
-const redeemModal: ShallowRef<IPNFTModel | undefined> = ref();
+
+const redeemables: ShallowRef<IPFTRedeemable[]> = ref([]);
+const tokenModal: ShallowRef<IPFTRedeemable | undefined> = ref();
+const redeemModal: ShallowRef<IPFTRedeemable | undefined> = ref();
+
+const isSelf = computed(() => eth.account.value?.equals(props.account));
+
 const pfa: Ref<string | undefined> = ref();
 const isChangingPfa: Ref<boolean> = ref(false);
 const pfaEphemeral: Ref<string> = ref("");
+
 const subscribers: ShallowRef<Address[]> = ref([]);
 const isSubscribed = ref(false);
 const subscriptions: ShallowRef<Address[]> = ref([]);
-
-const redeemables = computed(() =>
-  tokens.value.filter((t) => t.ipnft1155ExpiredAt)
-);
-
-const collectibles = computed(() =>
-  tokens.value.filter((t) => t.ipnft1155ExpiredAt === null)
-);
-
-const isSelf = computed(() => eth.account.value?.equals(props.account));
 
 onMounted(async () => {
   await props.account.resolve();
 
   edb.iterateEventsIndex(
-    "IPNFT",
-    "currentOwner",
+    "IPFTRedeemable.Claim",
+    "author",
     props.account.address.value!.toString(),
     "next",
     async (t) => {
-      const cid = IPNFT.uint256ToCID(BigNumber.from(t.id));
-      const exists = await eth.ipnft1155.exists(new IPNFT.Token(cid));
+      const cid = IPFT.uint256ToCID(
+        BigNumber.from(t.id),
+        DagCbor.code,
+        keccak256.code
+      );
+
+      const exists = await eth.ipftRedeemable.exists(cid);
       if (!exists) return;
 
-      const token = IPNFTModel.getOrCreate(cid);
-      token.ipnft1155ExpiredAt = t.ipnft1155ExpiredAt || null;
-      token.ipnft1155Finalized = t.ipnft1155IsFinalized;
-      tokens.value.push(token);
+      const token = IPFTRedeemable.getOrCreate(cid);
+      eth.onConnect(() => token.fetchEthData());
+      token.fetchIPFSMetadata();
+
+      redeemables.value.push(token);
     }
   );
 
@@ -202,37 +204,24 @@ async function unsubscribe() {
         span.font-bold.text-lg.min-w-max 🎟 Redeemables ({{ redeemables.length }})
         span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be redeemed
       .flex.flex-col.gap-3
-        Token.rounded.bg-base-100.border.transition-colors.hover_border-base-content.hover_border-opacity-25(
+        IPFTRedeemableVue.rounded.bg-base-100.border.transition-colors.hover_border-base-content.hover_border-opacity-25(
           v-for="token in redeemables"
           :token="token"
-          :kind="TokenKind.Full"
           @click-interest="tokenModal = token"
           @redeem="redeemModal = token"
-        )
-
-    template(v-if="collectibles.length > 0")
-      h2.flex.gap-2.items-baseline
-        span.font-bold.text-lg.min-w-max 🧸 Collectibles ({{ collectibles.length }})
-        span.text-sm.text-base-content.text-opacity-75.break-all Tokens which may be collected
-      .grid.grid-cols-1.gap-3.sm_grid-cols-3
-        Token.rounded.border.bg-base-100.transition-all.active_scale-95.cursor-pointer.hover_border-base-content.hover_border-opacity-25(
-          v-for="token in collectibles"
-          :token="token"
-          :kind="TokenKind.Card"
-          @click-interest="tokenModal = token"
         )
 
 Teleport(to="body")
   TokenModal(
     v-if="tokenModal"
     @close="tokenModal = undefined"
-    :ipnft="tokenModal"
+    :ipft="tokenModal"
   )
 
   Redeem(
-    v-if="redeemModal && redeemModal.ipnft1155Balance"
+    v-if="redeemModal && redeemModal.balance"
     @close="redeemModal = undefined"
-    :ipnft="redeemModal"
-    :balance="redeemModal.ipnft1155Balance"
+    :ipft="redeemModal"
+    :balance="redeemModal.balance"
   )
 </template>

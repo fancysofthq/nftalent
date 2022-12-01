@@ -4,15 +4,17 @@ import Chip from "./shared/Chip.vue";
 import * as eth from "@/services/eth";
 import { ref } from "vue";
 import { ethers } from "ethers";
+import * as IPFT from "@/services/eth/contract/IPFT";
 
 const props = defineProps<{ listing: Listing }>();
 const isPrimary = ref(false);
 
 eth.onConnect(() => {
-  eth.metaStore
-    .findPrimaryListing(
-      props.listing.token.token.toERC1155Token(eth.ipnft1155.address).toNFT()
-    )
+  eth.openStore
+    .findPrimaryListing({
+      contract: eth.ipftRedeemable.address,
+      id: IPFT.cidToUint256(props.listing.token.cid),
+    })
     .then((listing) => {
       isPrimary.value = listing?.id === props.listing.id;
     });

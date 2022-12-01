@@ -1,5 +1,5 @@
-import { Ierc1155MetadataUri as BaseType } from "@/../lib/ipnft/waffle/types/Ierc1155MetadataUri";
-import { abi } from "@/../lib/ipnft/waffle/IERC1155MetadataURI.json";
+import { Ierc1155MetadataUri as BaseType } from "@/../lib/ipft/waffle/types/Ierc1155MetadataUri";
+import { abi } from "@/../lib/ipft/waffle/IERC1155MetadataURI.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Token } from "./IERC1155";

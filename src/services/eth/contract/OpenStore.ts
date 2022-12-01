@@ -1,5 +1,5 @@
-import { MetaStore as BaseType } from "@/../lib/meta/waffle/types/MetaStore";
-import { abi } from "@/../lib/meta/waffle/MetaStore.json";
+import { OpenStore as BaseType } from "@/../lib/metabazaar/waffle/types/OpenStore";
+import { abi } from "@/../lib/metabazaar/waffle/OpenStore.json";
 import {
   BigNumber,
   BigNumberish,
@@ -14,7 +14,6 @@ import { EventDB } from "../event-db";
 import { app } from "../../eth";
 import { EventBase } from "./common";
 import { type NFT } from "./NFT";
-import IPNFT1155 from "./IPNFT1155";
 import { Address } from "../Address";
 
 export class ListingConfig {
@@ -195,7 +194,6 @@ export type Withdraw = EventBase & {
  *     uint256 royaltyValue,
  *     address indexed appAddress,
  *     uint256 appFee,
- *     uint256 appGratitude,
  *     uint256 profit
  * );
  * ```
@@ -213,11 +211,10 @@ export type Purchase = EventBase & {
   royaltyValue: BigInt;
   appAddress: string;
   appFee: BigInt;
-  appGratitude: BigInt;
   profit: BigInt;
 };
 
-export default class MetaStore {
+export default class OpenStore {
   readonly contract: BaseType;
 
   constructor(
@@ -311,8 +308,8 @@ export default class MetaStore {
 
   private async _syncList(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
-      "MetaStore.List",
-      ["MetaStore.List", "latestFetchedEventBlock"],
+      "OpenStore.List",
+      ["OpenStore.List", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
       this.contract.filters.List(null, null, app.toString()),
@@ -342,8 +339,8 @@ export default class MetaStore {
 
   private async _syncReplenish(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
-      "MetaStore.Replenish",
-      ["MetaStore.Replenish", "latestFetchedEventBlock"],
+      "OpenStore.Replenish",
+      ["OpenStore.Replenish", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
       this.contract.filters.Replenish(null, app.toString(), null, null, null),
@@ -368,8 +365,8 @@ export default class MetaStore {
 
   private async _syncWithdraw(edb: EventDB, untilBlock: number) {
     await edb.syncEvents(
-      "MetaStore.Withdraw",
-      ["MetaStore.Withdraw", "latestFetchedEventBlock"],
+      "OpenStore.Withdraw",
+      ["OpenStore.Withdraw", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
       this.contract.filters.Withdraw(null, app.toString(), null, null, null),
@@ -394,8 +391,8 @@ export default class MetaStore {
 
   private _syncPurchase(edb: EventDB, untilBlock: number) {
     edb.syncEvents(
-      "MetaStore.Purchase",
-      ["MetaStore.Purchase", "latestFetchedEventBlock"],
+      "OpenStore.Purchase",
+      ["OpenStore.Purchase", "latestFetchedEventBlock"],
       untilBlock,
       this.contract,
       this.contract.filters.Purchase(
@@ -407,7 +404,6 @@ export default class MetaStore {
         null,
         null,
         app.toString(),
-        null,
         null,
         null
       ),
@@ -429,7 +425,6 @@ export default class MetaStore {
           royaltyValue: BigInt(e.args!.royaltyValue._hex),
           appAddress: e.args!.appAddress.toLowerCase(),
           appFee: BigInt(e.args!.appFee._hex),
-          appGratitude: BigInt(e.args!.appGratitude._hex),
           profit: BigInt(e.args!.profit._hex),
         },
       ]

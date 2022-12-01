@@ -1,6 +1,9 @@
-[submodule "lib/ipnft"]
-	path = lib/ipnft
-	url = ../ipnft
-[submodule "lib/meta"]
-	path = lib/meta
-	url = ../meta
+[submodule "lib/ipft"]
+	path = lib/ipft
+	url = git://github.com/nxsf/ipft.git
+[submodule "lib/metabazaar"]
+	path = lib/metabazaar
+	url = git@github.com:nxsf/metabazaar.git
+[submodule "lib/persona"]
+	path = lib/persona
+	url = git@github.com:nxsf/persona.git

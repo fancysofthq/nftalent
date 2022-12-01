@@ -3,10 +3,10 @@ import { OnClickOutside } from "@vueuse/components";
 import { BigNumber } from "ethers";
 import { computed, ref } from "vue";
 import * as eth from "@/services/eth";
-import IPNFT from "@/models/IPNFT";
+import IPNFTRedeemable from "@/models/IPFTRedeemable";
 
 const props = defineProps<{
-  ipnft: IPNFT;
+  ipft: IPNFTRedeemable;
   balance: BigNumber;
 }>();
 
@@ -21,10 +21,10 @@ const canTransact = computed(
 );
 
 async function transact() {
-  const tx = await eth.ipnft1155.safeTransferFrom(
+  const tx = await eth.ipftRedeemable.safeTransferFrom(
     eth.account.value!.address.value!,
-    eth.ipnft1155.address,
-    props.ipnft.token,
+    eth.ipftRedeemable.address,
+    props.ipft.cid,
     BigNumber.from(redeemAmount.value)
   );
 
@@ -54,7 +54,7 @@ async function transact() {
 
           .flex.gap-1.items-baseline
             span.font-semibold Redeemable per token:
-            span.border.px-1.rounded-sm.text-sm {{ ipnft.metadata?.properties.unit }}
+            span.border.px-1.rounded-sm.text-sm {{ ipft.metadata?.properties.unit }}
 
         .flex.items-center.gap-2.border.rounded-lg.p-4
           .text-xl ☝️

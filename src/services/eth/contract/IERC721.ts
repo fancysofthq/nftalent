@@ -1,5 +1,5 @@
-import { Ierc721 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc721";
-import { abi } from "@/../lib/ipnft/waffle/IERC721.json";
+import { Ierc721 as BaseType } from "@/../lib/ipft/waffle/types/Ierc721";
+import { abi } from "@/../lib/ipft/waffle/IERC721.json";
 import { BigNumber, Signer } from "ethers";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";

@@ -6,16 +6,14 @@ import { computed, type ComputedRef, ref, type Ref } from "vue";
 import TagInput from "@/components/shared/TagInput.vue";
 import { BigNumber, ethers } from "ethers";
 import * as eth from "@/services/eth";
-import * as IPNFT from "@/services/eth/contract/IPNFT";
 import * as nftalent from "@/nftalent";
 import Spinner, { Kind as SpinnerKind } from "@/components/shared/Spinner.vue";
-import { Uint8 } from "@/util";
+import { indexOfMulti, Uint8 } from "@/util";
 import { CID } from "multiformats/cid";
 import { web3StorageApiKey } from "@/store";
-import MetaStore from "@/services/eth/contract/MetaStore";
-import IPNFTModel from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import { addMonths } from "date-fns/fp";
-import Token, { Kind as TokenKind } from "@/components/Token.vue";
+import IPFTRedeemableVue from "@/components/IPFTRedeemable.vue";
 
 const now = new Date();
 const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -48,8 +46,7 @@ const price: ComputedRef<BigNumber> = computed(() => {
 
 enum MintStage {
   UploadToIPFS,
-  MintIPNFT721,
-  MintIPNFT1155,
+  Mint,
   Done,
 }
 
@@ -57,10 +54,8 @@ function stageName(stage: MintStage): string {
   switch (stage) {
     case MintStage.UploadToIPFS:
       return "Upload to IPFS";
-    case MintStage.MintIPNFT721:
-      return "Mint IPNFT (721)";
-    case MintStage.MintIPNFT1155:
-      return "Mint IPNFT (1155)";
+    case MintStage.Mint:
+      return "Mint token";
     case MintStage.Done:
       return "Done!";
   }
@@ -70,8 +65,7 @@ function stageEth(stage: MintStage): boolean {
   switch (stage) {
     case MintStage.UploadToIPFS:
       return false;
-    case MintStage.MintIPNFT721:
-    case MintStage.MintIPNFT1155:
+    case MintStage.Mint:
       return true;
     case MintStage.Done:
       return false;
@@ -137,24 +131,19 @@ const metadata: ComputedRef<
   }
 });
 
-const tokenModel: ComputedRef<IPNFTModel> = computed(() => {
-  return new IPNFTModel(
-    new IPNFT.Token(
-      cid.value ||
-        CID.parse("bafyreial4ixkorwjjluaifmpbzdxgqmcmjcvzqx3c3k32syzcoeqjdsgum")
-    ),
+const tokenModel: ComputedRef<IPFTRedeemable> = computed(() => {
+  return new IPFTRedeemable(
+    cid.value ||
+      CID.parse("bafyreial4ixkorwjjluaifmpbzdxgqmcmjcvzqx3c3k32syzcoeqjdsgum"),
     {
       metadata: ref(metadata.value),
-      ipnft721Minter: eth.account,
-      ipnft721MintedAt: ref(now),
-      ipnft721Royalty: ref(royalty.value / 255),
-      ipnft721CurrentOwner: eth.account,
-      ipnft1155Balance: ref(BigNumber.from(0)),
-      ipnft1155TotalSupply: ref(BigNumber.from(editions.value || 0)),
-      ipnft1155Finalized: ref(false),
-      ipnft1155ExpiredAt: ref(
-        tab.value == Tab.Redeemable ? redeemableExpiredAt.value : null
-      ),
+      claimer: eth.account,
+      claimedAt: ref(now),
+      royalty: ref(royalty.value / 255),
+      balance: ref(BigNumber.from(0)),
+      totalSupply: ref(BigNumber.from(editions.value || 0)),
+      finalized: ref(false),
+      expiredAt: redeemableExpiredAt,
     }
   );
 });
@@ -163,21 +152,26 @@ async function mint() {
   if (!isCurrentlyMintable.value) throw new Error("Not mintable");
 
   mintStage.value = MintStage.UploadToIPFS;
-  const { root, ipnftTag } = await uploadToIpfs(metadata.value, (progress) => {
-    uploadProgress.value = progress;
-  });
+  const { root, ipftTag: ipnftTag } = await uploadToIpfs(
+    metadata.value,
+    (progress) => {
+      uploadProgress.value = progress;
+    }
+  );
   cid.value = root.cid;
 
-  mintStage.value = MintStage.MintIPNFT721;
-  let tx = await mint721(root, ipnftTag, new Uint8(royalty.value));
-  console.log("mintIPNFT", tx);
-
-  const expiredAt =
-    tab.value == Tab.Redeemable ? redeemableExpiredAt.value : undefined;
-
-  mintStage.value = MintStage.MintIPNFT1155;
-  tx = await mint1155(root.cid, editions.value, false, expiredAt, price.value);
-  console.log("mint1155", tx);
+  mintStage.value = MintStage.Mint;
+  const expiredAt = redeemableExpiredAt.value!;
+  let tx = await claimMint(
+    root,
+    ipnftTag,
+    new Uint8(royalty.value),
+    editions.value,
+    false,
+    expiredAt,
+    price.value
+  );
+  console.log("mint", tx);
 
   mintStage.value = MintStage.Done;
 }
@@ -365,17 +359,17 @@ function date2InputDate(date: Date | undefined): string {
       .w-full.p-4.bg-checkerboard.bg-fixed.grid.grid-cols-1.gap-3(
         :class="{ 'sm_grid-cols-3': tab == Tab.CollectibeImage, 'sm_grid-cols-2': tab == Tab.Redeemable }"
       )
-        Token.rounded-lg.bg-base-100.shadow-lg.h-min.sm_w-auto(
-          v-if="tab === Tab.CollectibeImage"
+        //- Token.rounded-lg.bg-base-100.shadow-lg.h-min.sm_w-auto(
+        //-   v-if="tab === Tab.CollectibeImage"
+        //-   :token="tokenModel"
+        //-   :animatePlaceholder="false"
+        //-   :kind="TokenKind.Card"
+        //-   class="w-3/4"
+        //- )
+        IPFTRedeemableVue.rounded-lg.bg-base-100.shadow-lg.sm_col-span-2(
           :token="tokenModel"
           :animatePlaceholder="false"
-          :kind="TokenKind.Card"
-          class="w-3/4"
-        )
-        Token.rounded-lg.bg-base-100.shadow-lg.sm_col-span-2(
-          :token="tokenModel"
-          :animatePlaceholder="false"
-          :kind="TokenKind.Full"
+          :fetch-metadata="false"
         )
 
       .p-4.flex.flex-col.text-base-content
@@ -409,7 +403,7 @@ function date2InputDate(date: Date | undefined): string {
                 span(v-if="stageEth(stage - 1)") ⚡️
                 router-link.daisy-link(
                   v-if="cid && stage - 1 == MintStage.Done && mintStage == MintStage.Done"
-                  :to="'/' + cid"
+                  :to="'/ipft/' + cid"
                 ) Visit token page
                 span(v-if="mintStage !== undefined && mintStage > stage - 1") ✅
                 Spinner.leading-none.h-6.w-6.text-primary.stroke-2(
@@ -439,9 +433,8 @@ function date2InputDate(date: Date | undefined): string {
 </template>
 
 <script lang="ts">
-import IPNFT721 from "@/services/eth/contract/IPNFT721";
 import { type ContractTransaction, type BigNumberish } from "ethers";
-import { ListingConfig } from "@/services/eth/contract/MetaStore";
+import * as OpenStore from "@/services/eth/contract/OpenStore";
 import { Block, encode as encodeBlock } from "multiformats/block";
 import { sha256 } from "multiformats/hashes/sha2";
 import * as dagCbor from "@ipld/dag-cbor";
@@ -453,34 +446,32 @@ import { type Blockstore } from "ipfs-car/blockstore";
 import { RouterLink } from "vue-router";
 import { type ToFile } from "ipfs-core-types/src/utils";
 import { ipfsUri } from "@/services/ipfs";
+import * as IPFT from "@/services/eth/contract/IPFT";
+import { keccak256 } from "@multiformats/sha3";
 
-async function mint721(
+async function claimMint(
   root: Block<unknown>,
-  ipnftTag: IPNFT.Tag,
-  royalty: Uint8
-): Promise<ContractTransaction> {
-  return await eth.ipnft721.mint(
-    eth.account.value!.address.value!,
-    root,
-    ipnftTag,
-    royalty
-  );
-}
-
-async function mint1155(
-  cid: CID,
+  ipftTag: IPFT.Tag,
+  royalty: Uint8,
   amount: BigNumberish,
   finalize: boolean,
-  expiredAt: Date | undefined,
+  expiredAt: Date,
   price: BigNumberish
 ): Promise<ContractTransaction> {
-  return await eth.ipnft1155.mint(
-    eth.metaStore.address,
-    new IPNFT.Token(cid),
+  const tagOffset = indexOfMulti(root.bytes, ipftTag.toBytes());
+  if (tagOffset === -1) throw "IPNFT tag not found in root";
+
+  return await eth.ipftRedeemable.claimMint(
+    eth.account.value!.address.value!,
+    root.cid,
+    root.bytes,
+    tagOffset,
+    royalty,
+    eth.openStore.address,
     amount,
     finalize,
     expiredAt,
-    new ListingConfig(
+    new OpenStore.ListingConfig(
       eth.account.value!.address.value!,
       eth.app,
       price
@@ -559,7 +550,7 @@ async function uploadToIpfs(
   progressCallback: (fraction: number) => void
 ): Promise<{
   root: Block<unknown>;
-  ipnftTag: IPNFT.Tag;
+  ipftTag: IPFT.Tag;
 }> {
   if (!web3StorageApiKey.value) throw "No Web3.Storage API key set";
   const client = new Web3Storage({ token: web3StorageApiKey.value });
@@ -579,21 +570,28 @@ async function uploadToIpfs(
     // maxChunkSize: 1024 * 1024,
   });
 
-  const ipnftTag = new IPNFT.Tag(
-    (await eth.provider.value!.getNetwork()).chainId,
-    eth.ipnft721.address,
-    eth.account.value!.address.value!,
-    await eth.ipnft721.minterNonce(eth.account.value!.address.value!)
+  console.debug((await eth.provider.value!.getNetwork()).chainId);
+  console.debug(
+    await eth.ipftRedeemable.authorNonce(eth.account.value!.address.value!)
   );
+
+  const tag = new IPFT.Tag(
+    (await eth.provider.value!.getNetwork()).chainId,
+    eth.ipftRedeemable.address,
+    eth.account.value!.address.value!,
+    await eth.ipftRedeemable.authorNonce(eth.account.value!.address.value!)
+  );
+
+  console.debug("ipnftTag", tag);
 
   const root = await encodeBlock({
     value: {
       content: contentCID,
       "metadata.json": metadataCid,
-      ipnft: ipnftTag.bytes,
+      ipft: tag.toBytes(),
     },
     codec: dagCbor,
-    hasher: sha256,
+    hasher: keccak256,
   });
   await blockstore.put(root.cid, root.bytes);
 
@@ -619,6 +617,6 @@ async function uploadToIpfs(
     },
   });
 
-  return { root, ipnftTag };
+  return { root, ipftTag: tag };
 }
 </script>

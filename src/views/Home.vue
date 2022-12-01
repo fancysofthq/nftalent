@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import Redeem from "@/components/modals/Redeem.vue";
 import TokenModal from "@/components/modals/Token.vue";
-import IPNFTModel from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import { ref, type Ref } from "vue";
 import Feed from "./Home/Feed.vue";
 
-const tokenModal: Ref<IPNFTModel | undefined> = ref();
-const redeemModal: Ref<IPNFTModel | undefined> = ref();
+const tokenModal: Ref<IPFTRedeemable | undefined> = ref();
+const redeemModal: Ref<IPFTRedeemable | undefined> = ref();
 </script>
 
 <template lang="pug">
@@ -18,13 +18,13 @@ Teleport(to="body")
   TokenModal(
     v-if="tokenModal"
     @close="tokenModal = undefined"
-    :ipnft="tokenModal"
+    :ipft="tokenModal"
   )
 
   Redeem(
-    v-if="redeemModal && redeemModal.ipnft1155Balance"
+    v-if="redeemModal && redeemModal.balance"
     @close="redeemModal = undefined"
-    :ipnft="redeemModal"
-    :balance="redeemModal.ipnft1155Balance"
+    :ipft="redeemModal"
+    :balance="redeemModal.balance"
   )
 </template>

@@ -4,10 +4,10 @@ import { OnClickOutside } from "@vueuse/components";
 import { BigNumber, ethers } from "ethers";
 import { computed, ref } from "vue";
 import * as eth from "@/services/eth";
-import IPNFT from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import { formatDistance } from "date-fns";
 
-const props = defineProps<{ listing: Listing; ipnft: IPNFT }>();
+const props = defineProps<{ listing: Listing; ipft: IPFTRedeemable }>();
 const emit = defineEmits(["close"]);
 const purchaseAmount = ref(1);
 const sum = computed(() =>
@@ -20,7 +20,7 @@ async function transact() {
   if (!canTransact.value) throw new Error("Cannot transact");
   const amount = BigNumber.from(purchaseAmount.value);
 
-  const tx = await eth.metaStore.purchase(props.listing.id, amount, sum.value);
+  const tx = await eth.openStore.purchase(props.listing.id, amount, sum.value);
   console.debug(tx);
 
   props.listing.stockSizeSub(amount);
@@ -55,17 +55,17 @@ async function transact() {
 
             .flex.gap-1.items-baseline
               span.font-semibold Redeemable per token:
-              span.border.px-1.rounded-sm.text-sm {{ ipnft.metadata?.properties.unit }}
+              span.border.px-1.rounded-sm.text-sm {{ ipft.metadata?.properties.unit }}
 
-            .flex.gap-1.items-baseline(v-if="ipnft.ipnft1155ExpiredAt")
+            .flex.gap-1.items-baseline(v-if="ipft.expiredAt")
               span.font-semibold Expiration:
-              span.text-sm {{ ipnft.ipnft1155ExpiredAt?.toLocaleString() }} ({{ formatDistance(ipnft.ipnft1155ExpiredAt, new Date(), { addSuffix: true }) }})
-              span.text-sm(v-if="ipnft.ipnft1155ExpiredAt > new Date()") ✅
+              span.text-sm {{ ipft.expiredAt?.toLocaleString() }} ({{ formatDistance(ipft.expiredAt, new Date(), { addSuffix: true }) }})
+              span.text-sm(v-if="ipft.expiredAt > new Date()") ✅
 
           //- .daisy-alert.daisy-alert-info
           .flex.items-center.gap-2.border.p-4.rounded-lg
             .text-xl ☝️
-            p.leading-tight(v-if="ipnft.ipnft1155ExpiredAt") After purchasing a redeemable token, you'd be able to resell it, or redeem later.
+            p.leading-tight(v-if="ipft.expiredAt") After purchasing a redeemable token, you'd be able to resell it, or redeem later.
             p.leading-tight(v-else) After purchasing a token, you'd be able to resell it.
 
         .p-4

@@ -1,5 +1,5 @@
-import { Ierc165 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc165";
-import { abi } from "@/../lib/ipnft/waffle/IERC165.json";
+import { Ierc165 as BaseType } from "@/../lib/ipft/waffle/types/Ierc165";
+import { abi } from "@/../lib/ipft/waffle/IERC165.json";
 import { BytesLike, Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Address } from "../Address";

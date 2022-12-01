@@ -1,7 +1,7 @@
 import { type FileWithUrl } from "@/components/shared/SelectImage.vue";
-import { Ierc1155 as BaseType } from "@/../lib/ipnft/waffle/types/Ierc1155";
-import { abi } from "@/../lib/ipnft/waffle/IERC1155.json";
-import { BigNumber, Signer } from "ethers";
+import { Ierc1155 as BaseType } from "@/../lib/ipft/waffle/types/Ierc1155";
+import { abi } from "@/../lib/ipft/waffle/IERC1155.json";
+import { BigNumber, ethers, Signer } from "ethers";
 import { EventBase } from "./common";
 import { NFT } from "./NFT";
 import { Provider } from "@ethersproject/abstract-provider";
@@ -43,6 +43,34 @@ export type Transfer = EventBase & {
   id: string; // NOTE: [^1]
   value: BigInt;
 };
+
+export function fromTransferSingle(event: ethers.Event): Transfer {
+  return {
+    transactionHash: event.transactionHash,
+    blockNumber: event.blockNumber,
+    logIndex: event.logIndex,
+    subIndex: 0,
+
+    from: (event.args!.from as string).toLowerCase(),
+    to: (event.args!.to as string).toLowerCase(),
+    id: (event.args!.id as BigNumber)._hex,
+    value: (event.args!.value as BigNumber).toBigInt(),
+  };
+}
+
+export function fromTransferBatch(e: ethers.Event): Transfer[] {
+  return (e.args!.ids as BigNumber[]).map((id, i) => ({
+    transactionHash: e.transactionHash,
+    blockNumber: e.blockNumber,
+    logIndex: e.logIndex,
+    subIndex: i,
+
+    from: (e.args!.from as string).toLowerCase(),
+    to: (e.args!.to as string).toLowerCase(),
+    id: id._hex,
+    value: (e.args!.values as unknown as BigNumber[])[i].toBigInt(),
+  }));
+}
 
 export class Token {
   readonly contract: Address;

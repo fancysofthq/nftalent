@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from "ethers";
-import { Persona as BaseType } from "@/../lib/meta/waffle/types/Persona";
-import { abi } from "@/../lib/meta/waffle/Persona.json";
+import { Persona as BaseType } from "@/../lib/persona/waffle/types/Persona";
+import { abi } from "@/../lib/persona/waffle/Persona.json";
 import { Signer } from "ethers";
 import { Provider } from "@ethersproject/abstract-provider";
 import { EventDB, Account as DbAccount } from "../event-db";

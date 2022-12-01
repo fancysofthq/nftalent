@@ -3,21 +3,20 @@ import { BigNumber, ethers } from "ethers";
 import { computed, type ComputedRef, onMounted, ref, type Ref } from "vue";
 import * as eth from "@/services/eth";
 import Account from "@/models/Account";
-import IPNFTModel from "@/models/IPNFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
 import Chip from "@/components/shared/Chip.vue";
 import { EventWrapper, EventKind } from "./History.vue";
 import { formatDistance } from "date-fns";
 
-const props = defineProps<{ event: EventWrapper; token: IPNFTModel }>();
+const props = defineProps<{ event: EventWrapper; token: IPFTRedeemable }>();
 const timestamp: Ref<Date | undefined> = ref();
 
 onMounted(() => {
-  console.debug(props.event);
   props.token.fetchIPFSMetadata();
 });
 
 eth.onConnect(() => {
-  props.token.fetchEthMetadata();
+  props.token.fetchEthData();
 
   eth.provider
     .value!.getBlock(props.event.blockNumber)
@@ -26,53 +25,53 @@ eth.onConnect(() => {
 
 const eventEmoji: ComputedRef<string> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT1155Mint:
+    case EventKind.Mint:
       return "🌱";
-    case EventKind.MetaStoreList:
+    case EventKind.List:
       return "📦";
-    case EventKind.MetaStorePurchase:
+    case EventKind.Purchase:
       return "💳";
-    case EventKind.IPNFT1155Redeem:
+    case EventKind.Redeem:
       return "🎟";
   }
 });
 
 const eventName: ComputedRef<string> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT1155Mint:
+    case EventKind.Mint:
       return "minted";
-    case EventKind.MetaStoreList:
+    case EventKind.List:
       return "listed";
-    case EventKind.MetaStorePurchase:
+    case EventKind.Purchase:
       return "purchased";
-    case EventKind.IPNFT1155Redeem:
+    case EventKind.Redeem:
       return "redeemed";
   }
 });
 
 const eventActor: ComputedRef<string | undefined> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT1155Mint:
-      return props.event.asIPNFT1155Mint.from;
-    case EventKind.MetaStoreList:
-      return props.event.asMetaStoreList.seller;
-    case EventKind.MetaStorePurchase:
-      return props.event.asMetaStorePurchase.buyer;
-    case EventKind.IPNFT1155Redeem:
-      return props.event.asIPNFT1155Redeem.from;
+    case EventKind.Mint:
+      return props.event.asMint.from;
+    case EventKind.List:
+      return props.event.asList.seller;
+    case EventKind.Purchase:
+      return props.event.asPurchase.buyer;
+    case EventKind.Redeem:
+      return props.event.asRedeem.from;
   }
 });
 
 const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
   switch (props.event.kind) {
-    case EventKind.IPNFT1155Mint:
-      return props.event.asIPNFT1155Mint.value;
-    case EventKind.MetaStoreList:
+    case EventKind.Mint:
+      return props.event.asMint.value;
+    case EventKind.List:
       return BigInt(0); // TODO:
-    case EventKind.MetaStorePurchase:
-      return props.event.asMetaStorePurchase.amount;
-    case EventKind.IPNFT1155Redeem:
-      return props.event.asIPNFT1155Redeem.value;
+    case EventKind.Purchase:
+      return props.event.asPurchase.amount;
+    case EventKind.Redeem:
+      return props.event.asRedeem.value;
   }
 });
 </script>
@@ -91,10 +90,10 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
     .flex.items-baseline.gap-1.w-max
       span {{ eventName }}
       span(v-if="eventAmount") &nbsp;{{ eventAmount }}
-      span(v-if="event.isMetaStorePurchase")
+      span(v-if="event.isPurchase")
         span &nbsp;for&nbsp;
         img.h-5.inline-block(src="/img/eth-icon.svg" title="ETH")
-        span &nbsp;{{ ethers.utils.formatEther(BigNumber.from(event.asMetaStorePurchase.income)) }}
+        span &nbsp;{{ ethers.utils.formatEther(BigNumber.from(event.asPurchase.income)) }}
 
   .p-4(v-if="timestamp") 
     .text-base-content.text-opacity-50.w-max(

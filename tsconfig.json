@@ -15,7 +15,8 @@
     "noEmit": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@multiformats/sha3": ["src/@types/@multiformats/sha3.d.mts"]
     }
   },
   "vueCompilerOptions": {

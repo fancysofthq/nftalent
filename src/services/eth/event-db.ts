@@ -10,8 +10,8 @@ import {
   IDBPTransaction,
 } from "idb";
 import { Transfer as IERC1155Transfer } from "./contract/IERC1155";
-import { Transfer as IERC721Transfer } from "./contract/IERC721";
-import { List, Replenish, Withdraw, Purchase } from "./contract/MetaStore";
+import { Claim } from "./contract/IPFTRedeemable";
+import * as OpenStore from "./contract/OpenStore";
 import {
   SetBasicPfp,
   SetBasicBgp,
@@ -24,29 +24,11 @@ import {
 } from "./contract/Persona";
 
 export type Event =
-  | IERC721Transfer
   | IERC1155Transfer
-  | List
-  | Replenish
-  | Withdraw
-  | Purchase;
-
-export type {
-  IERC721Transfer,
-  IERC1155Transfer,
-  List,
-  Replenish,
-  Withdraw,
-  Purchase,
-};
-
-export type IPNFT = {
-  id: string;
-  currentOwner: string;
-  ipnft721MintEvent: [number, number]; // IERC721Transfer key
-  ipnft1155IsFinalized?: boolean | null;
-  ipnft1155ExpiredAt?: Date | null;
-};
+  | OpenStore.List
+  | OpenStore.Replenish
+  | OpenStore.Withdraw
+  | OpenStore.Purchase;
 
 export type Persona = {
   pfp?: { contractAddress: string; tokenId: string };
@@ -70,24 +52,18 @@ interface Schema extends DBSchema {
     value: number;
   };
 
-  "IPNFT721.Transfer": {
+  "IPFTRedeemable.Claim": {
     key: [number, number]; // blockNumber + logIndex
-    value: IERC721Transfer;
+    value: Claim;
     indexes: {
       blockNumber: number;
-      from: string;
-      to: string;
-      tokenId: string;
-      ["from-blockNumber"]: [string, number];
-      ["from-tokenId"]: [string, string];
-      ["from-to-blockNumber"]: [string, string, number];
-      ["to-blockNumber"]: [string, number];
-      ["tokenId-blockNumber"]: [string, number];
-      ["to-tokenId-blockNumber"]: [string, string, number];
+      author: string;
+      id: string;
+      ["author-blockNumber"]: [string, number];
     };
   };
 
-  "IPNFT1155.Transfer": {
+  "IPFTRedeemable.Transfer": {
     key: [number, number, number]; // blockNumber + logIndex + subIndex
     value: IERC1155Transfer;
     indexes: {
@@ -102,12 +78,11 @@ interface Schema extends DBSchema {
       ["id-blockNumber"]: [string, number];
       ["to-id-blockNumber"]: [string, string, number];
     };
-    foo: "bar";
   };
 
-  "MetaStore.List": {
+  "OpenStore.List": {
     key: [number, number]; // blockNumber + logIndex
-    value: List;
+    value: OpenStore.List;
     indexes: {
       blockNumber: [
         string, // appAddress
@@ -137,27 +112,27 @@ interface Schema extends DBSchema {
     };
   };
 
-  "MetaStore.Replenish": {
+  "OpenStore.Replenish": {
     key: [number, number]; // blockNumber + logIndex
-    value: Replenish;
+    value: OpenStore.Replenish;
     indexes: {
       listingId: string;
       ["listingId-blockNumber"]: [string, number];
     };
   };
 
-  "MetaStore.Withdraw": {
+  "OpenStore.Withdraw": {
     key: [number, number]; // blockNumber + logIndex
-    value: Withdraw;
+    value: OpenStore.Withdraw;
     indexes: {
       listingId: string;
       ["listingId-blockNumber"]: [string, number];
     };
   };
 
-  "MetaStore.Purchase": {
+  "OpenStore.Purchase": {
     key: [number, number]; // blockNumber + logIndex
-    value: Purchase;
+    value: OpenStore.Purchase;
     indexes: {
       blockNumber: [
         string, // appAddress
@@ -185,14 +160,6 @@ interface Schema extends DBSchema {
         string, // buyer
         number // blockNumber
       ];
-    };
-  };
-
-  IPNFT: {
-    key: string;
-    value: IPNFT;
-    indexes: {
-      currentOwner: string;
     };
   };
 
@@ -269,26 +236,16 @@ export class EventDB {
             "latestFetchedEventBlock"
           );
 
-          const e1 = db.createObjectStore("IPNFT721.Transfer", {
+          const e1 = db.createObjectStore("IPFTRedeemable.Claim", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
           e1.createIndex("blockNumber", "blockNumber");
-          e1.createIndex("from", "from");
-          e1.createIndex("to", "to");
-          e1.createIndex("tokenId", "tokenId");
-          e1.createIndex("from-blockNumber", ["from", "blockNumber"]);
-          e1.createIndex("from-tokenId", ["from", "tokenId"]);
-          e1.createIndex("from-to-blockNumber", ["from", "to", "blockNumber"]);
-          e1.createIndex("to-blockNumber", ["to", "blockNumber"]);
-          e1.createIndex("tokenId-blockNumber", ["tokenId", "blockNumber"]);
-          e1.createIndex("to-tokenId-blockNumber", [
-            "to",
-            "tokenId",
-            "blockNumber",
-          ]);
+          e1.createIndex("author", "author");
+          e1.createIndex("id", "id");
+          e1.createIndex("author-blockNumber", ["author", "blockNumber"]);
 
-          const e2 = db.createObjectStore("IPNFT1155.Transfer", {
+          const e2 = db.createObjectStore("IPFTRedeemable.Transfer", {
             keyPath: ["blockNumber", "logIndex", "subIndex"],
           });
 
@@ -303,7 +260,7 @@ export class EventDB {
           e2.createIndex("id-blockNumber", ["id", "blockNumber"]);
           e2.createIndex("to-id-blockNumber", ["to", "id", "blockNumber"]);
 
-          const e3 = db.createObjectStore("MetaStore.List", {
+          const e3 = db.createObjectStore("OpenStore.List", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
@@ -323,21 +280,21 @@ export class EventDB {
             "blockNumber",
           ]);
 
-          const e4 = db.createObjectStore("MetaStore.Replenish", {
+          const e4 = db.createObjectStore("OpenStore.Replenish", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
           e4.createIndex("listingId", "listingId");
           e4.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
 
-          const e5 = db.createObjectStore("MetaStore.Withdraw", {
+          const e5 = db.createObjectStore("OpenStore.Withdraw", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
           e5.createIndex("listingId", "listingId");
           e5.createIndex("listingId-blockNumber", ["listingId", "blockNumber"]);
 
-          const e6 = db.createObjectStore("MetaStore.Purchase", {
+          const e6 = db.createObjectStore("OpenStore.Purchase", {
             keyPath: ["blockNumber", "logIndex"],
           });
 
@@ -357,12 +314,6 @@ export class EventDB {
             "buyer",
             "blockNumber",
           ]);
-
-          const o1 = db.createObjectStore("IPNFT", {
-            keyPath: "id",
-          });
-
-          o1.createIndex("currentOwner", "currentOwner");
         }
 
         if (oldVersion < 2) {

@@ -1,9 +1,8 @@
 import { ethers } from "ethers";
 import { ref, ShallowRef } from "vue";
 import Account from "@/models/Account";
-import IPNFT721 from "./eth/contract/IPNFT721";
-import IPNFT1155 from "./eth/contract/IPNFT1155";
-import MetaStore from "./eth/contract/MetaStore";
+import IPFTRedeemable from "./eth/contract/IPFTRedeemable";
+import OpenStore from "./eth/contract/OpenStore";
 import Persona from "./eth/contract/Persona";
 import edb from "./eth/event-db";
 import { Address } from "./eth/Address";
@@ -15,9 +14,8 @@ export const account: ShallowRef<Account | undefined> = ref();
 
 export const app = new Address(import.meta.env.VITE_APP_ADDRESS);
 
-export let ipnft721: IPNFT721;
-export let ipnft1155: IPNFT1155;
-export let metaStore: MetaStore;
+export let ipftRedeemable: IPFTRedeemable;
+export let openStore: OpenStore;
 export let persona: Persona;
 
 export async function tryLogin() {
@@ -46,18 +44,13 @@ export async function login() {
   // See https://docs.ethers.io/v5/concepts/best-practices/
   //
 
-  ipnft721 = new IPNFT721(
-    new Address(import.meta.env.VITE_IPNFT721_ADDRESS),
+  ipftRedeemable = new IPFTRedeemable(
+    new Address(import.meta.env.VITE_IPNFT_REDEEMABLE_ADDRESS),
     provider.value.getSigner()
   );
 
-  ipnft1155 = new IPNFT1155(
-    new Address(import.meta.env.VITE_IPNFT1155_ADDRESS),
-    provider.value.getSigner()
-  );
-
-  metaStore = new MetaStore(
-    new Address(import.meta.env.VITE_META_STORE_ADDRESS),
+  openStore = new OpenStore(
+    new Address(import.meta.env.VITE_OPEN_STORE_ADDRESS),
     provider.value.getSigner()
   );
 
@@ -69,9 +62,8 @@ export async function login() {
   provider.value.getBlockNumber().then((untilBlock) => {
     console.debug("Syncing events until block", untilBlock);
 
-    ipnft721.sync(edb, untilBlock);
-    ipnft1155.sync(edb, untilBlock);
-    metaStore.sync(edb, untilBlock);
+    ipftRedeemable.sync(edb, untilBlock);
+    openStore.sync(edb, untilBlock);
     persona.sync(edb, untilBlock, app);
   });
 

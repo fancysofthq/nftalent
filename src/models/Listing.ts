@@ -1,16 +1,18 @@
 import Account from "./Account";
-import IPNFTModel from "./IPNFT";
-import * as IPNFT from "@/services/eth/contract/IPNFT";
+import IPFTRedeemable from "./IPFTRedeemable";
+import * as IPFT from "@/services/eth/contract/IPFT";
 import edb from "@/services/eth/event-db";
 import { BigNumber } from "@ethersproject/bignumber";
 import { BytesLike } from "ethers/lib/utils";
 import { ref, type ShallowRef } from "vue";
-import { Listing as RawListing } from "@/services/eth/contract/MetaStore";
+import * as OpenStore from "@/services/eth/contract/OpenStore";
 import { markRaw } from "@vue/reactivity";
+import * as DagCbor from "@ipld/dag-cbor";
+import { keccak256 } from "@multiformats/sha3";
 
 export default class Listing {
   readonly id: BytesLike;
-  readonly token: IPNFTModel;
+  readonly token: IPFTRedeemable;
   readonly seller: Account;
   readonly app: Account;
   readonly priceRef: ShallowRef<BigNumber>;
@@ -21,7 +23,7 @@ export default class Listing {
   /**
    * Get an existing listing or create new model instance.
    */
-  static getOrCreate(raw: RawListing): Listing {
+  static getOrCreate(raw: OpenStore.Listing): Listing {
     const id = raw.id.toString();
 
     if (Listing.memoized.has(id)) {
@@ -33,9 +35,11 @@ export default class Listing {
     }
   }
 
-  private constructor(raw: RawListing) {
+  private constructor(raw: OpenStore.Listing) {
     this.id = raw.id;
-    this.token = IPNFTModel.getOrCreate(IPNFT.uint256ToCID(raw.token.id));
+    this.token = IPFTRedeemable.getOrCreate(
+      IPFT.uint256ToCID(raw.token.id, DagCbor.code, keccak256.code)
+    );
     this.seller = Account.getOrCreateFromAddress(raw.seller);
     this.app = Account.getOrCreateFromAddress(raw.app);
     this.priceRef = ref(raw.price);
@@ -68,7 +72,7 @@ export default class Listing {
 
     const promises = [
       edb.iterateEventsIndex(
-        "MetaStore.Replenish",
+        "OpenStore.Replenish",
         "listingId",
         this.id.toString(),
         "next",
@@ -79,7 +83,7 @@ export default class Listing {
       ),
 
       edb.iterateEventsIndex(
-        "MetaStore.Withdraw",
+        "OpenStore.Withdraw",
         "listingId",
         this.id.toString(),
         "next",
@@ -89,7 +93,7 @@ export default class Listing {
       ),
 
       edb.iterateEventsIndex(
-        "MetaStore.Purchase",
+        "OpenStore.Purchase",
         "listingId",
         this.id.toString(),
         "next",

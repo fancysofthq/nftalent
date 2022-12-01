@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import * as IPNFT from "@/services/eth/contract/IPNFT";
-import IPNFTModel from "@/models/IPNFT";
-import { onMounted, type Ref, ref, onUnmounted } from "vue";
+import * as IPFT from "@/services/eth/contract/IPFT";
+import IPFTRedeemable from "@/models/IPFTRedeemable";
+import { type Ref, ref, onUnmounted } from "vue";
 import Entry from "./HistoryEntry.vue";
 
 type Entry = {
   event: EventWrapper;
-  token: IPNFTModel;
+  token: IPFTRedeemable;
 };
 
-const props = defineProps<{ token: IPNFT.Token }>();
+const props = defineProps<{ token: IPFTRedeemable }>();
 const entries: Ref<Entry[]> = ref([]);
 let cancelFeed = false;
 
@@ -21,7 +21,7 @@ eth.onConnect(async () => {
       entries.value.unshift(
         ..._entries.map((e) => ({
           event: e,
-          token: IPNFTModel.getOrCreate(IPNFT.uint256ToCID(e.tokenId)),
+          token: IPFTRedeemable.getOrCreate(IPFT.uint256ToCID(e.tokenId)),
         }))
       );
     },
@@ -47,23 +47,19 @@ Entry(
 </template>
 
 <script lang="ts">
-import edb, {
-  type Event,
-  type IERC1155Transfer,
-  type IERC721Transfer,
-  type List,
-  type Purchase,
-} from "@/services/eth/event-db";
+import edb, { type Event } from "@/services/eth/event-db";
 import { timeout } from "@/util";
 import { BigNumber } from "ethers";
 import { AddressZero } from "@ethersproject/constants";
 import * as eth from "@/services/eth";
+import * as IERC1155 from "@/services/eth/contract/IERC1155";
+import * as OpenStore from "@/services/eth/contract/OpenStore";
 
 export enum EventKind {
-  IPNFT1155Mint,
-  MetaStoreList,
-  MetaStorePurchase,
-  IPNFT1155Redeem,
+  Mint,
+  List,
+  Purchase,
+  Redeem,
 }
 
 export class EventWrapper {
@@ -77,59 +73,59 @@ export class EventWrapper {
     return this.event.logIndex;
   }
 
-  get isIPNFT1155Mint(): boolean {
-    return this.kind == EventKind.IPNFT1155Mint;
+  get isMint(): boolean {
+    return this.kind == EventKind.Mint;
   }
 
-  get asIPNFT1155Mint(): IERC1155Transfer {
-    if (!this.isIPNFT1155Mint) throw new Error("Invalid event kind");
-    return this.event as IERC1155Transfer;
+  get asMint(): IERC1155.Transfer {
+    if (!this.isMint) throw new Error("Invalid event kind");
+    return this.event as IERC1155.Transfer;
   }
 
-  get isMetaStoreList(): boolean {
-    return this.kind == EventKind.MetaStoreList;
+  get isList(): boolean {
+    return this.kind == EventKind.List;
   }
 
-  get asMetaStoreList(): List {
-    if (!this.isMetaStoreList) throw new Error("Invalid event kind");
-    return this.event as List;
+  get asList(): OpenStore.List {
+    if (!this.isList) throw new Error("Invalid event kind");
+    return this.event as OpenStore.List;
   }
 
-  get isMetaStorePurchase(): boolean {
-    return this.kind == EventKind.MetaStorePurchase;
+  get isPurchase(): boolean {
+    return this.kind == EventKind.Purchase;
   }
 
-  get asMetaStorePurchase(): Purchase {
-    if (!this.isMetaStorePurchase) throw new Error("Invalid event kind");
-    return this.event as Purchase;
+  get asPurchase(): OpenStore.Purchase {
+    if (!this.isPurchase) throw new Error("Invalid event kind");
+    return this.event as OpenStore.Purchase;
   }
 
-  get isIPNFT1155Redeem(): boolean {
-    return this.kind == EventKind.IPNFT1155Redeem;
+  get isRedeem(): boolean {
+    return this.kind == EventKind.Redeem;
   }
 
-  get asIPNFT1155Redeem(): IERC1155Transfer {
-    if (!this.isIPNFT1155Redeem) throw new Error("Invalid event kind");
-    return this.event as IERC1155Transfer;
+  get asRedeem(): IERC1155.Transfer {
+    if (!this.isRedeem) throw new Error("Invalid event kind");
+    return this.event as IERC1155.Transfer;
   }
 
   get tokenId(): BigNumber {
     switch (this.kind) {
-      case EventKind.IPNFT1155Mint:
-        return BigNumber.from(this.asIPNFT1155Mint.id);
-      case EventKind.MetaStoreList:
-        return BigNumber.from(this.asMetaStoreList.token.id);
-      case EventKind.MetaStorePurchase:
-        return BigNumber.from(this.asMetaStorePurchase.token.id);
-      case EventKind.IPNFT1155Redeem:
-        return BigNumber.from(this.asIPNFT1155Redeem.id);
+      case EventKind.Mint:
+        return BigNumber.from(this.asMint.id);
+      case EventKind.List:
+        return BigNumber.from(this.asList.token.id);
+      case EventKind.Purchase:
+        return BigNumber.from(this.asPurchase.token.id);
+      case EventKind.Redeem:
+        return BigNumber.from(this.asRedeem.id);
     }
   }
 }
 
 // OPTIMIZE: Lots of boilerplate code in feed functions.
 async function subscribeToFeed(
-  filter: IPNFT.Token,
+  filter: IPFTRedeemable,
   callback: (events: EventWrapper[]) => void,
   pollInterval: number,
   pollCancelled: () => boolean
@@ -142,10 +138,10 @@ async function subscribeToFeed(
     const promises = [];
     const events: EventWrapper[] = [];
 
-    // IPNFT1155 Mint & Redeem
+    // Mint & Redeem
     promises.push(
       edb.iterateEventsIndex(
-        "IPNFT1155.Transfer",
+        "IPFTRedeemable.Transfer",
         "id-blockNumber",
         IDBKeyRange.bound(
           [filter.id._hex, transferBlock],
@@ -156,29 +152,29 @@ async function subscribeToFeed(
           transferBlock = e.blockNumber + 1;
 
           if (e.from == AddressZero) {
-            events.push(new EventWrapper(EventKind.IPNFT1155Mint, e));
-          } else if (e.to == eth.ipnft1155.address.toString()) {
-            events.push(new EventWrapper(EventKind.IPNFT1155Redeem, e));
+            events.push(new EventWrapper(EventKind.Mint, e));
+          } else if (e.to == eth.ipftRedeemable.address.toString()) {
+            events.push(new EventWrapper(EventKind.Redeem, e));
           }
         }
       )
     );
 
-    // MetaStore List
+    // List
     promises.push(
       edb.iterateEventsIndex(
-        "MetaStore.List",
+        "OpenStore.List",
         "token-blockNumber",
         IDBKeyRange.bound(
           [
             eth.app.toString(),
-            eth.ipnft1155.address.toString(),
+            eth.ipftRedeemable.address.toString(),
             filter.id._hex,
             listBlock,
           ],
           [
             eth.app.toString(),
-            eth.ipnft1155.address.toString(),
+            eth.ipftRedeemable.address.toString(),
             filter.id._hex,
             Number.MAX_SAFE_INTEGER,
           ]
@@ -186,26 +182,26 @@ async function subscribeToFeed(
         "next",
         (e) => {
           listBlock = e.blockNumber + 1;
-          events.push(new EventWrapper(EventKind.MetaStoreList, e));
+          events.push(new EventWrapper(EventKind.List, e));
         }
       )
     );
 
-    // MetaStore Purchase
+    // Purchase
     promises.push(
       edb.iterateEventsIndex(
-        "MetaStore.Purchase",
+        "OpenStore.Purchase",
         "token-blockNumber",
         IDBKeyRange.bound(
           [
             eth.app.toString(),
-            eth.ipnft1155.address.toString(),
+            eth.ipftRedeemable.address.toString(),
             filter.id._hex,
             purchaseBlock,
           ],
           [
             eth.app.toString(),
-            eth.ipnft1155.address.toString(),
+            eth.ipftRedeemable.address.toString(),
             filter.id._hex,
             Number.MAX_SAFE_INTEGER,
           ]
@@ -213,7 +209,7 @@ async function subscribeToFeed(
         "next",
         (e) => {
           purchaseBlock = e.blockNumber + 1;
-          events.push(new EventWrapper(EventKind.MetaStorePurchase, e));
+          events.push(new EventWrapper(EventKind.Purchase, e));
         }
       )
     );
