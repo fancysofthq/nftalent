@@ -6,4 +6,4 @@
 	url = https://github.com/nxsf/metabazaar.git
 [submodule "lib/persona"]
 	path = lib/persona
-	url = git@github.com:nxsf/persona.git
+	url = git@github.com:nxsf/persona
