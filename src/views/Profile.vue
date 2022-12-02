@@ -185,19 +185,19 @@ async function unsubscribe() {
         span &nbsp;⋅&nbsp;
         span {{ subscriptions.length }} subscription(s)
 
-      template(v-if="!isSelf")
+      template(v-if="isSelf !== undefined && !isSelf")
+        button.daisy-btn.mt-1.flex.gap-1.daisy-btn-sm(
+          v-if="isSubscribed"
+          :disabled="!eth.account.value"
+          @click="unsubscribe"
+        ) 🚫 Unfollow
         button.daisy-btn.daisy-btn-secondary.mt-1.flex.gap-1.daisy-btn-sm(
-          v-if="!isSubscribed"
+          v-else
           :disabled="!eth.account.value"
           @click="subscribe"
         )
           span.text-xl 👀
           span Follow
-        button.daisy-btn.mt-1.flex.gap-1.daisy-btn-sm(
-          v-else
-          :disabled="!eth.account.value"
-          @click="unsubscribe"
-        ) 🚫 Unfollow
 
     template(v-if="redeemables.length > 0")
       h2.flex.gap-2.items-baseline
