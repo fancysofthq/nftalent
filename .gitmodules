@@ -1,6 +1,6 @@
 [submodule "lib/ipft"]
 	path = lib/ipft
-	url = git://github.com/nxsf/ipft.git
+	url = git@github.com:nxsf/ipft.git
 [submodule "lib/metabazaar"]
 	path = lib/metabazaar
 	url = git@github.com:nxsf/metabazaar.git
