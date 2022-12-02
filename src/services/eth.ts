@@ -29,6 +29,12 @@ export async function login() {
 
   // TODO: Allow to select different wallet providers?
   provider.value = new ethers.providers.Web3Provider(window.ethereum, "any");
+
+  await window.ethereum.request({
+    method: "wallet_switchEthereumChain",
+    params: [{ chainId: import.meta.env.VITE_CHAIN_ID }],
+  });
+
   window.localStorage.setItem(PROVIDER_KEY, "generic");
 
   await window.ethereum.request({ method: "eth_requestAccounts" });

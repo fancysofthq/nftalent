@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_OPEN_STORE_ADDRESS: string;
   readonly VITE_PERSONA_ADDRESS: string;
   readonly VITE_API_URL: string;
+  readonly VITE_CHAIN_ID: string;
 }
 
 interface ImportMeta {
