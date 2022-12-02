@@ -3,7 +3,7 @@
 	url = git://github.com/nxsf/ipft.git
 [submodule "lib/metabazaar"]
 	path = lib/metabazaar
-	url = git@github.com:nxsf/metabazaar.git
+	url = https://github.com/nxsf/metabazaar.git
 [submodule "lib/persona"]
 	path = lib/persona
 	url = git@github.com:nxsf/persona.git
