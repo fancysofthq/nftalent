@@ -217,7 +217,7 @@ interface Schema extends DBSchema {
   };
 }
 
-const SYNC_BLOCK_BATCH_SIZE = 10;
+const SYNC_BLOCK_BATCH_SIZE = 100;
 
 export class EventDB {
   private _db!: IDBPDatabase<Schema>;
@@ -575,7 +575,7 @@ export class EventDB {
   ) {
     let fromBlock =
       (await this._db.get("latestFetchedEventBlock", eventStore)) ||
-      parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
+      parseInt(import.meta.env.VITE_GENESIS_BLOCK) ||
       0;
 
     while (fromBlock < finalBlock) {
@@ -592,7 +592,7 @@ export class EventDB {
       const tx = this._db.transaction(txStores, "readwrite");
       let latestBlock =
         (await tx.objectStore("latestFetchedEventBlock").get(eventStore)) ||
-        parseInt(import.meta.env.VITE_ETH_GENESIS_BLOCK) ||
+        parseInt(import.meta.env.VITE_GENESIS_BLOCK) ||
         0;
 
       if (latestBlock <= fromBlock) {

@@ -66,8 +66,6 @@ export async function login() {
   );
 
   provider.value.getBlockNumber().then((untilBlock) => {
-    console.debug("Syncing events until block", untilBlock);
-
     ipftRedeemable.sync(edb, untilBlock);
     openStore.sync(edb, untilBlock);
     persona.sync(edb, untilBlock, app);

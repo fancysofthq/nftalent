@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_PERSONA_ADDRESS: string;
   readonly VITE_API_URL: string;
   readonly VITE_CHAIN_ID: string;
+  readonly VITE_GENESIS_BLOCK: string;
 }
 
 interface ImportMeta {
