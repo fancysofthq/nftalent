@@ -119,9 +119,17 @@ async function queryPfp() {
 </script>
 
 <template lang="pug">
-img.daisy-mask.daisy-mask-hexagon.object-contain(
-  v-if="img"
-  :src="img.toString()"
+.pfp.flex.items-center.justify-center.daisy-mask(
+  :class="img ? 'daisy-mask-hexagon' : 'daisy-mask-squircle'"
 )
-svg.daisy-mask.daisy-mask-squircle(ref="svgRef" v-else)
+  img.daisy-mask.daisy-mask-hexagon(
+    v-if="img"
+    style="width: 90%; height: 90%"
+    :src="img.toString()"
+  )
+  svg.daisy-mask.daisy-mask-squircle(
+    v-else
+    style="width: 90%; height: 90%"
+    ref="svgRef"
+  )
 </template>

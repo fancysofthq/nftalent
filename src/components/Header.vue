@@ -60,9 +60,8 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
     @apply font-bold text-primary;
   }
 
-  // TODO: Apply border to the PFP.
-  // .pfp {
-  //   @apply box-content border-2 border-primary;
-  // }
+  .pfp {
+    @apply bg-primary;
+  }
 }
 </style>

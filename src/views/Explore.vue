@@ -45,13 +45,13 @@ onMounted(async () => {
         h3.font-semibold.leading-none.text-primary {{ collection.title }}
         p.text-sm {{ collection.desc }}
       .flex.gap-3.flex-wrap
-        router-link.flex.flex-col.gap-1.items-center.w-32(
+        router-link.flex.flex-col.gap-2.items-center.w-32.border.rounded-lg.p-2(
           v-for="account in collection.accounts"
           :to="'/' + account.address.value?.toString()"
         )
-          PFP.bg-base-200(:account="account")
-          code.daisy-badge.daisy-badge-primary.daisy-badge-sm(
+          PFP.h-full.w-full.bg-base-200(:account="account")
+          code.daisy-badge.daisy-badge-primary.daisy-badge-sm.-mb-4(
             v-if="account.ensName.value"
           ) {{ account.ensName.value }}
-          code.daisy-badge.daisy-badge-sm(v-else="account.address.value") {{ account.address.value?.display }}
+          code.daisy-badge.daisy-badge-sm.-mb-4(v-else="account.address.value") {{ account.address.value?.display }}
 </template>
