@@ -6,6 +6,7 @@ import OpenStore from "./eth/contract/OpenStore";
 import Persona from "./eth/contract/Persona";
 import edb from "./eth/event-db";
 import { Address } from "./eth/Address";
+import { Deferred } from "@/util";
 
 const PROVIDER_KEY = "eth.wallet.provider";
 
@@ -18,14 +19,30 @@ export let ipftRedeemable: IPFTRedeemable;
 export let openStore: OpenStore;
 export let persona: Persona;
 
+let ethPromise: Deferred<void> | undefined;
+
 export async function tryLogin() {
   const storedProvider = window.localStorage.getItem(PROVIDER_KEY);
   if (storedProvider) login();
 }
 
 export async function login() {
-  if (!window.ethereum || !window.ethereum.isConnected())
-    throw "Ethereum not connected";
+  if (!window.ethereum) {
+    console.debug("No ethereum provider found, adding listener");
+
+    ethPromise = new Deferred();
+    window.addEventListener(
+      "ethereum#initialized",
+      () => {
+        ethPromise?.resolve();
+      },
+      {
+        once: true,
+      }
+    );
+  }
+
+  await ethPromise?.promise;
 
   // TODO: Allow to select different wallet providers?
   provider.value = new ethers.providers.Web3Provider(window.ethereum, "any");
