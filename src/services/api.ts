@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import nProgress from "nprogress";
 import Web3Token from "web3-token";
 import * as eth from "./eth";
 import { Address } from "./eth/Address";
@@ -50,6 +51,17 @@ export async function yieldAuthedClient(
   retryAttempts = 1
 ): Promise<AxiosResponse> {
   const client = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+
+  client.interceptors.request.use(function (config) {
+    nProgress.start();
+    return config;
+  });
+
+  client.interceptors.response.use(function (response) {
+    nProgress.done();
+    return response;
+  });
+
   let response: AxiosResponse | undefined = undefined;
 
   while (retryAttempts > 0) {
