@@ -85,7 +85,7 @@ async function transact() {
           button.daisy-btn.btn-commit.w-full.flex.items-center.gap-1(
             @click="transact"
             :disabled="!canTransact"
-          ) 
+          )
             span.text-xl 💳
             span Purchase {{ purchaseAmount || 0 }} for
             img.h-5(src="/img/eth-icon.svg")

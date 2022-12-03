@@ -30,7 +30,7 @@ tr
         pfp-class="h-8 bg-base-100"
       )
       span.text-2xl(title="Primary listing") {{ isPrimary ? "👑" : "" }}
-  td 
+  td
     img.inline-block.h-5.mr-1(src="/img/eth-icon.svg" title="ETH")
     span {{ ethers.utils.formatEther(listing.price) }}
   td {{ listing.stockSize }}

@@ -5,7 +5,7 @@ footer.border-t.flex.justify-center.py-8
   .daisy-footer.max-w-3xl.px-4
     div
       img.h-16(src="/fancysoft.svg")
-      p 
+      p
         a.daisy-link.daisy-link-hover(
           href="https://twitter.com/fancysoft"
           target="_blank"

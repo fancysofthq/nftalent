@@ -125,7 +125,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
               tabindex="0"
             )
               li(v-if="maySetPfp")
-                button(@click="setPfp") 
+                button(@click="setPfp")
                   span.text-xl 🖼
                   span Set as PFP
 
@@ -169,7 +169,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
         )
 
         span.align-middle &nbsp;⋅&nbsp;
-        template(v-if="token.claimedAt") 
+        template(v-if="token.claimedAt")
           span.align-middle claimed&nbsp;
           span.align-middle(:title="token.claimedAt.toLocaleString()") {{ formatDistance(token.claimedAt, new Date(), { addSuffix: true }) }}
         Placeholder.inline-block.h-3.w-8.align-middle(

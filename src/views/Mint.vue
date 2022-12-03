@@ -206,7 +206,7 @@ function date2InputDate(date: Date | undefined): string {
         .daisy-alert.daisy-alert-error(v-if="!web3StorageApiKey")
           div
             span.text-2xl ⚠️
-            span 
+            span
               span You don't have Web3.Storage API key set up. Edit in&nbsp;
               router-link.daisy-link(to="/settings") Settings
               span .
@@ -283,7 +283,7 @@ function date2InputDate(date: Date | undefined): string {
         label.daisy-label.min-w-min
           span.daisy-label-text.font-semibold(
             :class="{ 'text-error': editions == 0 }"
-          ) 
+          )
             span Editions
             span.ml-1(v-if="editions == 0") ⚠️
         input.daisy-input.daisy-input-bordered.w-full(
@@ -294,7 +294,7 @@ function date2InputDate(date: Date | undefined): string {
         )
 
         label.daisy-label.min-w-min
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold
             span Royalty (0-255)
         input.daisy-input.daisy-input-bordered.w-full(
           type="number"
@@ -306,7 +306,7 @@ function date2InputDate(date: Date | undefined): string {
         )
 
         //- label.daisy-label.min-w-min
-        //-   span.daisy-label-text.font-semibold 
+        //-   span.daisy-label-text.font-semibold
         //-     span Token type
         //- .daisy-tabs.daisy-tabs-boxed
         //-   .daisy-tab(
@@ -344,7 +344,7 @@ function date2InputDate(date: Date | undefined): string {
           )
 
           label.daisy-label
-            span.daisy-label-text.font-semibold 
+            span.daisy-label-text.font-semibold
               span Redeem expires at
               span.ml-1(
                 v-if="!(redeemableExpiredAt && redeemableExpiredAt > now)"
@@ -374,18 +374,18 @@ function date2InputDate(date: Date | undefined): string {
 
       .p-4.flex.flex-col.text-base-content
         label.daisy-label
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold
             span Prerequisites
         .flex.flex-col
           .flex.gap-2
             span —
             span.text-lg {{ web3StorageApiKey ? "✅" : "⚠️" }}
-            span 
+            span
               router-link.daisy-link(to="/settings") Web3 storage API key
               span &nbsp;is {{ web3StorageApiKey ? "set" : "not set" }}
 
         label.daisy-label
-          span.daisy-label-text.font-semibold 
+          span.daisy-label-text.font-semibold
             span Progress
         .daisy-steps.daisy-steps-vertical(
           :class="{ 'opacity-50': !mintInProgress }"
@@ -423,7 +423,7 @@ function date2InputDate(date: Date | undefined): string {
           v-else
           @click="mint"
           :disabled="!isCurrentlyMintable || mintInProgress"
-        ) 
+        )
           span.text-lg 🌱
           span Mint
 </template>

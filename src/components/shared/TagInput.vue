@@ -52,7 +52,7 @@ function onCustomKey(e: KeyboardEvent) {
 .tag-input.daisy-input.daisy-input-bordered.flex.items-center.gap-1.flex-wrap.h-fit.px-4.py-2
   span.daisy-badge.daisy-badge-outline.daisy-badge-secondary.inline-flex.gap-1(
     v-for="(tag, index) of modelValue"
-  ) 
+  )
     | {{ tag }}
     span.cursor-pointer.text-error(@click="deleteTag(index)") x
   input.daisy-input.daisy-input-sm.px-0.grow(

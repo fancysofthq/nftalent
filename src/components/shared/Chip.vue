@@ -16,7 +16,7 @@ onMounted(() => account.resolve());
 <template lang="pug">
 router-link.daisy-link-hover.inline-flex.items-center(
   :to="'/' + account.address.value?.toString()"
-) 
+)
   PFP(:account="account" :class="pfpClass")
   span {{ account.ensName.value ? account.ensName.value : account.address.value?.display }}
 </template>

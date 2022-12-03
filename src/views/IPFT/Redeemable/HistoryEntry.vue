@@ -95,7 +95,7 @@ const eventAmount: ComputedRef<BigInt | undefined> = computed(() => {
         img.h-5.inline-block(src="/img/eth-icon.svg" title="ETH")
         span &nbsp;{{ ethers.utils.formatEther(BigNumber.from(event.asPurchase.income)) }}
 
-  .p-4(v-if="timestamp") 
+  .p-4(v-if="timestamp")
     .text-base-content.text-opacity-50.w-max(
       :title="timestamp.toLocaleString()"
     ) {{ formatDistance(timestamp, new Date(), { addSuffix: true }) }}

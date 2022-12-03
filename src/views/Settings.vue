@@ -37,7 +37,7 @@ function saveIpfsGateway() {
       small.text-sm.text-base-content.text-opacity-75 Set things here
     form.daisy-form-control.w-full.p-4.border
       label.daisy-label
-        span.daisy-label-text 
+        span.daisy-label-text
           a.daisy-link(href="https://web3.storage") Web3.Storage
           span &nbsp;API key
       .flex.gap-2
@@ -49,12 +49,12 @@ function saveIpfsGateway() {
         //- TODO: Add "👌" effect.
         button.daisy-btn.daisy-btn-primary.flex.gap-2(
           @click="saveWeb3StorageApiKey"
-        ) 
+        )
           span.text-lg 💾
           span Save
 
       label.daisy-label
-        span.daisy-label-text 
+        span.daisy-label-text
           span IPFS&nbsp;
           a.daisy-link(
             href="https://docs.ipfs.tech/concepts/ipfs-gateway/#subdomain"
@@ -65,7 +65,7 @@ function saveIpfsGateway() {
           v-model="ipfsGateway"
         )
         //- TODO: Add "👌" effect.
-        button.daisy-btn.daisy-btn-primary.flex.gap-2(@click="saveIpfsGateway") 
+        button.daisy-btn.daisy-btn-primary.flex.gap-2(@click="saveIpfsGateway")
           span.text-lg 💾
           span Save
 </template>
