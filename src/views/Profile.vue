@@ -181,9 +181,9 @@ async function unsubscribe() {
           )
 
       .flex.justify-center.text-base-content.text-opacity-75.text-sm
-        span {{ subscribers.length }} subscriber(s)
+        span {{ subscribers.length }} followers(s)
         span &nbsp;⋅&nbsp;
-        span {{ subscriptions.length }} subscription(s)
+        span {{ subscriptions.length }} followee(s)
 
       template(v-if="isSelf !== undefined && !isSelf")
         button.daisy-btn.mt-1.flex.gap-1.daisy-btn-sm(
