@@ -9,23 +9,26 @@ import Logo from "@/assets/cryptalent.svg?component";
 <template lang="pug">
 header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
   .w-full.max-w-3xl.h-full.px-4
-    .daisy-navbar-start.flex.items-center
-      router-link.contents(to="/") 
+    .daisy-navbar-start.flex.items-center.gap-2
+      router-link.contents(to="/")
         Logo.inline-block.h-8.transition-transform.duration-100.active_scale-90
-    .daisy-navbar-center
-    .daisy-navbar-end.flex.justify-end.items-center.gap-4
       router-link.transition-transform.duration-100.active_scale-90(
         to="/explore"
       ) ✨ Explore
-      router-link.transition-transform.duration-100.active_scale-90(to="/mint") 🌱 Mint
-      .flex.h-12.items-center.gap-2(v-if="account") 
+    .daisy-navbar-center
+    .daisy-navbar-end.flex.justify-end.items-center.gap-2
+      router-link.border.rounded.px-2.py-1.transition-transform.duration-100.active_scale-90(
+        v-if="account"
+        to="/mint"
+      ) 🌱 Mint
+      .flex.h-12.items-center.gap-2(v-if="account")
         router-link#profile-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
           :to="'/' + account.address.value?.toString()"
         )
           PFP.bg-base-200.cursor-pointer.h-full(
             :account="account"
             mask="squircle"
-          ) 
+          )
 
         .daisy-dropdown.daisy-dropdown-end
           label(tabindex="0")
@@ -34,21 +37,21 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
             tabindex="0"
           )
             li
-              router-link(to="/settings") 
+              router-link(to="/settings")
                 span.text-xl ⚙️
                 span Settings
             li
-              button(@click="logout") 
+              button(@click="logout")
                 span.text-xl 🚪
                 span Logout
-      button.daisy-btn.btn-commit.flex.gap-1(v-else @click="login") 
+      button.daisy-btn.btn-commit.flex.gap-1(v-else @click="login")
         span.text-xl 🔌
         span Connect
 </template>
 
 <style scoped lang="scss">
 .router-link-exact-active {
-  @apply font-bold text-primary;
+  @apply font-semibold text-primary;
 }
 
 #mint-button.router-link-exact-active {
