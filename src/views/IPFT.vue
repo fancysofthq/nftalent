@@ -55,7 +55,7 @@ onMounted(() => {
     h2.flex.gap-2.items-baseline
       span.font-bold.text-lg.min-w-max 💎 Token
       router-link.text-sm.text-base-content.text-opacity-75.break-all.daisy-link-hover(
-        :to="'/ipft/' + cid.toString()"
+        :to="'/token/' + cid.toString()"
       ) /ipft/{{ cid }}
     IPFTRedeemableVue.border.rounded-lg(
       v-if="ipft"

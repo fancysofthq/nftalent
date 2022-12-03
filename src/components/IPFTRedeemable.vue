@@ -82,7 +82,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
 )
   // Image
   router-link(
-    :to="'/ipft/' + token.cid?.toString()"
+    :to="'/token/' + token.cid?.toString()"
     custom
     v-slot="{ href, navigate }"
   )
@@ -110,7 +110,7 @@ function urlFromImage(image: string | URL | FileWithUrl): URL {
         span.flex.flex-wrap.items-center.justify-between.gap-1
           router-link.daisy-link-hover.daisy-link-primary.font-semibold.leading-none(
             v-if="token.metadata?.name"
-            :to="'/ipft/' + token.cid.toString()"
+            :to="'/token/' + token.cid.toString()"
           ) {{ token.metadata.name }}
           Placeholder.h-5.w-48(
             v-else

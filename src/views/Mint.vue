@@ -401,10 +401,6 @@ function date2InputDate(date: Date | undefined): string {
                   :class="{ 'text-opacity-50': !(mintStage !== undefined) || mintStage < stage - 1, 'font-semibold': mintStage == stage - 1 }"
                 ) {{ stageName(stage - 1) }}
                 span(v-if="stageEth(stage - 1)") ⚡️
-                router-link.daisy-link(
-                  v-if="cid && stage - 1 == MintStage.Done && mintStage == MintStage.Done"
-                  :to="'/ipft/' + cid"
-                ) Visit token page
                 span(v-if="mintStage !== undefined && mintStage > stage - 1") ✅
                 Spinner.leading-none.h-6.w-6.text-primary.stroke-2(
                   v-if="mintStage == stage - 1 && mintStage !== MintStage.Done"
@@ -414,12 +410,12 @@ function date2InputDate(date: Date | undefined): string {
                   v-if="stage - 1 === MintStage.UploadToIPFS"
                   :value="uploadProgress * 100"
                   max="100"
-                ) 
+                )
 
         router-link.daisy-btn.daisy-btn-secondary.mt-2.flex.gap-2(
           v-if="cid && mintStage == MintStage.Done"
-          :to="'/' + cid"
-        ) 
+          :to="'/token/' + cid"
+        )
           span.text-lg 👀
           span Visit token
 

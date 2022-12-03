@@ -18,7 +18,7 @@ export default createRouter({
     { path: "/mint", component: Mint },
     { path: "/explore", component: Explore },
     {
-      path: "/ipft/:cid(baf[0-7a-zA-Z]{56})",
+      path: "/token/:cid(baf[0-7a-zA-Z]{56})",
       component: IPFT,
       meta: { name: "Token" },
       props: (route) => ({
