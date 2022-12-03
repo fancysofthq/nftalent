@@ -90,8 +90,9 @@ import * as IPFS from "@/services/ipfs";
 import IERC1155MetadataURI from "@/services/eth/contract/IERC1155MetadataURI";
 import { Address } from "@/services/eth/Address";
 
-const { account } = defineProps<{
+const { account, innerPadding = 0.1 } = defineProps<{
   account: Account.default;
+  innerPadding?: number;
 }>();
 
 const img: Ref<URL | undefined> = ref();
@@ -120,16 +121,16 @@ async function queryPfp() {
 
 <template lang="pug">
 .pfp.flex.items-center.justify-center.daisy-mask(
-  :class="img ? 'daisy-mask-hexagon' : 'daisy-mask-squircle'"
+  :class="img ? 'daisy-mask-hexagon' : 'daisy-mask-circle'"
 )
-  img.daisy-mask.daisy-mask-hexagon(
+  img.daisy-mask.daisy-mask-hexagon.bg-base-100(
     v-if="img"
-    style="width: 90%; height: 90%"
+    :style="{ width: `calc(100% - 100% * ${innerPadding})`, height: `calc(100% - 100% * ${innerPadding})` }"
     :src="img.toString()"
   )
-  svg.daisy-mask.daisy-mask-squircle(
+  svg.daisy-mask.daisy-mask-circle.bg-base-100(
     v-else
-    style="width: 90%; height: 90%"
+    :style="{ width: `calc(100% - 100% * ${innerPadding})`, height: `calc(100% - 100% * ${innerPadding})` }"
     ref="svgRef"
   )
 </template>

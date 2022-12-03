@@ -25,10 +25,7 @@ header.w-full.daisy-navbar.bg-base-100.border-b.justify-center.px-0
         router-link#profile-link.h-full.flex.items-center.gap-2.transition-transform.duration-100.active_scale-95(
           :to="'/' + account.address.value?.toString()"
         )
-          PFP.bg-base-200.cursor-pointer.h-full(
-            :account="account"
-            mask="squircle"
-          )
+          PFP.bg-base-200.cursor-pointer.h-full(:account="account")
 
         .daisy-dropdown.daisy-dropdown-end
           label(tabindex="0")
