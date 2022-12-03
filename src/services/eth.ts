@@ -1,5 +1,5 @@
-import { ethers } from "ethers";
-import { ref, ShallowRef } from "vue";
+import { BigNumber, ethers } from "ethers";
+import { Ref, ref, ShallowRef } from "vue";
 import Account from "@/models/Account";
 import IPFTRedeemable from "./eth/contract/IPFTRedeemable";
 import OpenStore from "./eth/contract/OpenStore";
@@ -12,6 +12,7 @@ const PROVIDER_KEY = "eth.wallet.provider";
 
 export const provider = ref<ethers.providers.Web3Provider | undefined>();
 export const account: ShallowRef<Account | undefined> = ref();
+export const balance: Ref<BigNumber | undefined> = ref();
 
 export const app = new Address(import.meta.env.VITE_APP_ADDRESS);
 
@@ -62,6 +63,17 @@ export async function login() {
     window.ethereum.selectedAddress
   );
   account.value.resolve();
+
+  provider.value.on("block", () => {
+    provider
+      .value!.getBalance(account.value!.address.value!.toString())
+      .then((b) => {
+        if (!balance.value || !b.eq(balance.value)) {
+          balance.value = b;
+          console.debug("Balance changed to", b.toString());
+        }
+      });
+  });
 
   // TODO: Detect network change.
   // See https://docs.ethers.io/v5/concepts/best-practices/

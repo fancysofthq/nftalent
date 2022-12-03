@@ -14,7 +14,9 @@ const sum = computed(() =>
   props.listing.priceRef.value.mul(purchaseAmount.value || 0)
 );
 
-const canTransact = computed(() => sum.value.gt(0) && eth.account.value);
+const canTransact = computed(
+  () => sum.value.gt(0) && eth.account.value && eth.balance.value?.gt(sum.value)
+);
 
 async function transact() {
   if (!canTransact.value) throw new Error("Cannot transact");
