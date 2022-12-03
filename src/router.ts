@@ -7,6 +7,8 @@ const Home = () => import("./views/Home.vue");
 const Settings = () => import("./views/Settings.vue");
 const Mint = () => import("./views/Mint.vue");
 const Profile = () => import("./views/Profile.vue");
+const ProfileFollowers = () => import("./views/Profile/Followers.vue");
+const ProfileFollowees = () => import("./views/Profile/Followees.vue");
 const IPFT = () => import("./views/IPFT.vue");
 const Explore = () => import("./views/Explore.vue");
 
@@ -26,20 +28,64 @@ export default createRouter({
       }),
     },
     {
-      path: "/:name(\\w+\\.eth)",
+      path: "/:name(\\w+\\.eth|0x[0-9a-fA-F]{40})",
       component: Profile,
       meta: { name: "Profile" },
-      props: (route) => ({
-        account: Account.getOrCreateFromEnsName(route.params.name as string),
-      }),
+      props: (route) => {
+        if ((route.params.name as string).endsWith(".eth")) {
+          return {
+            account: Account.getOrCreateFromEnsName(
+              route.params.name as string
+            ),
+          };
+        } else {
+          return {
+            account: Account.getOrCreateFromAddress(
+              route.params.name as string
+            ),
+          };
+        }
+      },
     },
     {
-      path: "/:address(0x[0-9a-fA-F]{40})",
-      component: Profile,
-      meta: { name: "Profile" },
-      props: (route) => ({
-        account: Account.getOrCreateFromAddress(route.params.address as string),
-      }),
+      path: "/:name(\\w+\\.eth|0x[0-9a-fA-F]{40})/followers",
+      component: ProfileFollowers,
+      meta: { name: "Followers" },
+      props: (route) => {
+        if ((route.params.name as string).endsWith(".eth")) {
+          return {
+            account: Account.getOrCreateFromEnsName(
+              route.params.name as string
+            ),
+          };
+        } else {
+          return {
+            account: Account.getOrCreateFromAddress(
+              route.params.name as string
+            ),
+          };
+        }
+      },
+    },
+    {
+      path: "/:name(\\w+\\.eth|0x[0-9a-fA-F]{40})/followees",
+      component: ProfileFollowees,
+      meta: { name: "Followees" },
+      props: (route) => {
+        if ((route.params.name as string).endsWith(".eth")) {
+          return {
+            account: Account.getOrCreateFromEnsName(
+              route.params.name as string
+            ),
+          };
+        } else {
+          return {
+            account: Account.getOrCreateFromAddress(
+              route.params.name as string
+            ),
+          };
+        }
+      },
     },
   ],
 });

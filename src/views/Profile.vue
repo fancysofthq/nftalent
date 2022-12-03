@@ -45,9 +45,9 @@ const pfa: Ref<string | undefined> = ref();
 const isChangingPfa: Ref<boolean> = ref(false);
 const pfaEphemeral: Ref<string> = ref("");
 
-const subscribers: ShallowRef<Address[]> = ref([]);
-const isSubscribed = ref(false);
-const subscriptions: ShallowRef<Address[]> = ref([]);
+const followers: ShallowRef<Address[]> = ref([]);
+const followees: ShallowRef<Address[]> = ref([]);
+const isFollowing = ref(false);
 
 onMounted(async () => {
   await props.account.resolve();
@@ -79,8 +79,8 @@ onMounted(async () => {
     pfa.value = _pfa;
   });
 
-  fetchSubscriptions();
-  fetchSubscribers();
+  fetchFollowers();
+  fetchFollowees();
 });
 
 eth.onConnect(() => {
@@ -91,19 +91,17 @@ eth.onConnect(() => {
         props.account.address.value!
       )
       .then((res) => {
-        isSubscribed.value = res;
+        isFollowing.value = res;
       });
   }
 });
 
-async function fetchSubscribers() {
-  subscribers.value = await api.getSubscribers(props.account.address.value!);
+async function fetchFollowers() {
+  followers.value = await api.getSubscribers(props.account.address.value!);
 }
 
-async function fetchSubscriptions() {
-  subscriptions.value = await api.getSubscriptions(
-    props.account.address.value!
-  );
+async function fetchFollowees() {
+  followees.value = await api.getSubscriptions(props.account.address.value!);
 }
 
 async function setPfa() {
@@ -112,35 +110,38 @@ async function setPfa() {
   isChangingPfa.value = false;
 }
 
-async function subscribe() {
+async function follow() {
   const tx = await api.subscribe(
     eth.account.value!.address.value!,
     props.account.address.value!
   );
 
-  isSubscribed.value = true;
-  await fetchSubscribers();
+  isFollowing.value = true;
+  await fetchFollowers();
 }
 
-async function unsubscribe() {
+async function unfollow() {
   const tx = await api.unsubscribe(
     eth.account.value!.address.value!,
     props.account.address.value!
   );
 
-  isSubscribed.value = false;
-  await fetchSubscribers();
+  isFollowing.value = false;
+  await fetchFollowers();
 }
 </script>
 
 <template lang="pug">
 .w-full.flex.justify-center
   .w-full.max-w-3xl.flex.flex-col.p-4.gap-2
-    h2.flex.gap-2.items-baseline
-      span.font-bold.text-lg.min-w-max 🎭 Profile
-      router-link.daisy-link-hover.text-sm.text-base-content.text-opacity-75.break-all(
-        :to="'/' + (account.ensName.value || account.address.value?.toString())"
-      ) /{{ account.ensName.value || account.address.value?.toString() }}
+    .daisy-breadcrumbs.text-sm.p-0
+      ul
+        li.flex.gap-1.items-center
+          PFP.h-5(:account="account")
+          router-link.daisy-link-hover.text-base-content.text-opacity-75.break-all(
+            :to="'/' + (account.ensName.value || account.address.value?.toString())"
+          ) {{ account.ensName.value || account.address.value?.display }}
+
     .flex.flex-col.items-center.bg-base-100.w-full.border.rounded-lg.p-4.gap-1
       PFP.h-32.w-32.bg-base-200.mb-2(:account="account")
 
@@ -181,20 +182,24 @@ async function unsubscribe() {
           )
 
       .flex.justify-center.text-base-content.text-opacity-75.text-sm
-        span {{ subscribers.length }} followers(s)
+        router-link.daisy-link.daisy-link-hover(
+          :to="'/' + (account.ensName.value || account.address.value?.toString()) + '/followers'"
+        ) {{ followers.length }} followers(s)
         span &nbsp;⋅&nbsp;
-        span {{ subscriptions.length }} followee(s)
+        router-link.daisy-link.daisy-link-hover(
+          :to="'/' + (account.ensName.value || account.address.value?.toString()) + '/followees'"
+        ) {{ followees.length }} followee(s)
 
       template(v-if="isSelf !== undefined && !isSelf")
         button.daisy-btn.mt-1.flex.gap-1.daisy-btn-sm(
-          v-if="isSubscribed"
+          v-if="isFollowing"
           :disabled="!eth.account.value"
-          @click="unsubscribe"
+          @click="unfollow"
         ) 🚫 Unfollow
         button.daisy-btn.daisy-btn-secondary.mt-1.flex.gap-1.daisy-btn-sm(
           v-else
           :disabled="!eth.account.value"
-          @click="subscribe"
+          @click="follow"
         )
           span.text-xl 👀
           span Follow

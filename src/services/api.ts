@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import nProgress from "nprogress";
 import Web3Token from "web3-token";
 import * as eth from "./eth";
@@ -13,6 +13,32 @@ function jwtKeyFor(address: Address) {
 const nonAuthedClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
+
+function wrapClientWithProgress(client: AxiosInstance) {
+  client.interceptors.request.use(
+    function (config) {
+      nProgress.start();
+      return config;
+    },
+    function (error) {
+      nProgress.done();
+      return Promise.reject(error);
+    }
+  );
+
+  client.interceptors.response.use(
+    function (response) {
+      nProgress.done();
+      return response;
+    },
+    function (error) {
+      nProgress.done();
+      return Promise.reject(error);
+    }
+  );
+}
+
+wrapClientWithProgress(nonAuthedClient);
 
 /**
  * @return {string} JWT
@@ -52,15 +78,7 @@ export async function yieldAuthedClient(
 ): Promise<AxiosResponse> {
   const client = axios.create({ baseURL: import.meta.env.VITE_API_URL });
 
-  client.interceptors.request.use(function (config) {
-    nProgress.start();
-    return config;
-  });
-
-  client.interceptors.response.use(function (response) {
-    nProgress.done();
-    return response;
-  });
+  wrapClientWithProgress(client);
 
   let response: AxiosResponse | undefined = undefined;
 
@@ -91,14 +109,20 @@ export async function isSubscribed(
 ): Promise<boolean> {
   if (!from && !to) throw new Error("Must provide from or to");
 
-  const response = await nonAuthedClient.get("/v1/subscriptions/", {
-    params: {
-      from: from?.toString(),
-      to: to?.toString(),
-    },
-  });
-
-  return response.status === 200;
+  return nonAuthedClient
+    .get("/v1/subscriptions/", {
+      params: {
+        from: from?.toString(),
+        to: to?.toString(),
+      },
+    })
+    .then((response) => {
+      return response.status === 200;
+    })
+    .catch((error: AxiosError) => {
+      if (error.response?.status === 404) return false;
+      throw error;
+    });
 }
 
 export async function subscribe(
