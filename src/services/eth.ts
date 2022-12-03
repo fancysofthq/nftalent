@@ -48,10 +48,26 @@ export async function login() {
   // TODO: Allow to select different wallet providers?
   provider.value = new ethers.providers.Web3Provider(window.ethereum, "any");
 
-  await window.ethereum.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: import.meta.env.VITE_CHAIN_ID }],
-  });
+  const chain: AddEthereumChainParameter = JSON.parse(
+    import.meta.env.VITE_CHAIN
+  );
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chain.chainId }],
+    });
+  } catch (switchError: any) {
+    if (switchError.code === 4902) {
+      // TODO: Handle the add error.
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [chain],
+      });
+    } else {
+      throw switchError;
+    }
+  }
 
   window.localStorage.setItem(PROVIDER_KEY, "generic");
 
